@@ -1,0 +1,346 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://olawoye.github.io/lead-generation-agent/schemas/v1/agent-definition.schema.json",
+  "title": "AgentDefinition",
+  "description": "Platform-agnostic declarative definition of an AI agent. Runtime-independent: no references to Claude, Codex, MCP, or TypeScript.",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": {
+      "type": "string",
+      "description": "Schema version for this definition format.",
+      "enum": ["agent.definition/v1"]
+    },
+    "kind": {
+      "type": "string",
+      "description": "The kind of definition document.",
+      "enum": ["AgentDefinition"]
+    },
+    "metadata": {
+      "$ref": "#/definitions/Metadata"
+    },
+    "spec": {
+      "$ref": "#/definitions/AgentSpec"
+    }
+  },
+  "definitions": {
+    "Metadata": {
+      "type": "object",
+      "required": ["name", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Unique machine-readable name for this agent.",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Human-readable display name."
+        },
+        "version": {
+          "type": "string",
+          "description": "Semantic version of this agent definition.",
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+        },
+        "description": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "author": {
+          "type": "string"
+        },
+        "license": {
+          "type": "string"
+        }
+      }
+    },
+    "AgentSpec": {
+      "type": "object",
+      "required": ["objective", "orar", "steps"],
+      "additionalProperties": false,
+      "properties": {
+        "objective": {
+          "$ref": "#/definitions/Objective"
+        },
+        "orar": {
+          "$ref": "#/definitions/ORAR"
+        },
+        "options": {
+          "$ref": "#/definitions/OptionsSchema"
+        },
+        "policies": {
+          "$ref": "#/definitions/Policies"
+        },
+        "tools": {
+          "type": "array",
+          "description": "Tool requirements consumed by steps. Runtime resolves these independently.",
+          "items": { "$ref": "#/definitions/ToolRequirement" }
+        },
+        "steps": {
+          "type": "array",
+          "description": "Ordered list of declarative steps. Runtime determines execution order using dependencies.",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/Step" }
+        }
+      }
+    },
+    "Objective": {
+      "type": "object",
+      "required": ["summary", "successCriteria"],
+      "additionalProperties": false,
+      "properties": {
+        "summary": {
+          "type": "string",
+          "description": "One-sentence summary of what this agent achieves."
+        },
+        "successCriteria": {
+          "type": "array",
+          "description": "Measurable conditions that define a successful run.",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "context": {
+          "type": "string",
+          "description": "Additional background context for why this agent exists."
+        }
+      }
+    },
+    "ORAR": {
+      "type": "object",
+      "required": ["objective", "resources", "actions", "results"],
+      "additionalProperties": false,
+      "description": "Objective-Resources-Actions-Results: structured summary of what the agent does.",
+      "properties": {
+        "objective": {
+          "type": "string",
+          "description": "ORAR objective: what the agent is trying to achieve."
+        },
+        "resources": {
+          "type": "array",
+          "description": "Inputs and data sources required by the agent.",
+          "items": { "type": "string" }
+        },
+        "actions": {
+          "type": "array",
+          "description": "High-level actions the agent will perform.",
+          "items": { "type": "string" }
+        },
+        "results": {
+          "type": "array",
+          "description": "Expected outputs and outcomes of the agent.",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "OptionsSchema": {
+      "type": "object",
+      "description": "Configurable options and their JSON Schema definitions. Allows runtimes to validate user-supplied configuration.",
+      "required": ["properties"],
+      "additionalProperties": false,
+      "properties": {
+        "required": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/OptionProperty"
+          }
+        }
+      }
+    },
+    "OptionProperty": {
+      "type": "object",
+      "required": ["type", "description"],
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["string", "number", "integer", "boolean", "array", "object"]
+        },
+        "description": {
+          "type": "string"
+        },
+        "default": {},
+        "enum": {
+          "type": "array"
+        },
+        "minimum": {
+          "type": "number"
+        },
+        "maximum": {
+          "type": "number"
+        },
+        "items": {
+          "type": "object"
+        }
+      }
+    },
+    "Policies": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Declarative policies governing agent behaviour. Runtimes must enforce these.",
+      "properties": {
+        "maxRetries": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum number of retries per step on transient failure."
+        },
+        "timeoutSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum wall-clock seconds allowed for the entire agent run."
+        },
+        "rateLimiting": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "requestsPerMinute": { "type": "integer", "minimum": 1 },
+            "concurrentSteps": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "privacy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "maskPII": {
+              "type": "boolean",
+              "description": "Whether PII must be masked in logs and outputs."
+            },
+            "retentionDays": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "How many days intermediate results may be retained."
+            }
+          }
+        },
+        "errorHandling": {
+          "type": "string",
+          "enum": ["fail-fast", "continue-on-error", "rollback"],
+          "description": "How the runtime handles step-level errors."
+        }
+      }
+    },
+    "ToolRequirement": {
+      "type": "object",
+      "required": ["id", "description", "capabilities"],
+      "additionalProperties": false,
+      "description": "A logical tool the agent needs. Runtimes map this to a concrete implementation.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique tool identifier used to reference the tool from steps.",
+          "pattern": "^[a-z0-9-_]+$"
+        },
+        "description": {
+          "type": "string"
+        },
+        "capabilities": {
+          "type": "array",
+          "description": "Abstract capability tags runtimes use to resolve implementations.",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "optional": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, the agent can still run without this tool (degraded mode)."
+        }
+      }
+    },
+    "Step": {
+      "type": "object",
+      "required": ["id", "name", "description", "inputs", "outputs"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique step identifier. Used in dependsOn references.",
+          "pattern": "^[a-z0-9-_]+$"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string",
+          "description": "What this step does. Runtime uses this as the prompt/instruction seed."
+        },
+        "dependsOn": {
+          "type": "array",
+          "description": "IDs of steps that must complete before this step can run.",
+          "items": { "type": "string" },
+          "default": []
+        },
+        "tools": {
+          "type": "array",
+          "description": "Tool IDs from spec.tools used in this step.",
+          "items": { "type": "string" },
+          "default": []
+        },
+        "inputs": {
+          "type": "object",
+          "description": "Named inputs this step requires. Values are JSON Schema fragments.",
+          "additionalProperties": { "$ref": "#/definitions/IOProperty" }
+        },
+        "outputs": {
+          "type": "object",
+          "description": "Named outputs this step produces. Values are JSON Schema fragments.",
+          "additionalProperties": { "$ref": "#/definitions/IOProperty" }
+        },
+        "policy": {
+          "$ref": "#/definitions/StepPolicy"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "IOProperty": {
+      "type": "object",
+      "required": ["type", "description"],
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean",
+          "default": true
+        },
+        "source": {
+          "type": "string",
+          "description": "For inputs: reference to output of a prior step using 'stepId.outputName' notation."
+        }
+      }
+    },
+    "StepPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Per-step policy overrides.",
+      "properties": {
+        "maxRetries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "timeoutSeconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "cacheResults": {
+          "type": "boolean",
+          "description": "Whether the runtime may cache and reuse the output of this step."
+        }
+      }
+    }
+  }
+}
