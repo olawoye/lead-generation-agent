@@ -98,6 +98,15 @@ describe("loadDefinition()", () => {
   it("should have declared tools", () => {
     expect((result.definition.spec.tools ?? []).length).toBeGreaterThan(0);
   });
+
+  it("should define a normalized shared state with dedupe, provenance, and confidence metadata", () => {
+    const { state } = result.definition.spec;
+    expect(state).toBeDefined();
+    expect(state?.dedupeKeys).toEqual(expect.arrayContaining(["domain", "email", "company_name"]));
+    expect(state?.leadRecord?.properties).toHaveProperty("company");
+    expect(state?.leadRecord?.properties?.confidence).toBeDefined();
+    expect(state?.leadRecord?.properties?.provenance).toBeDefined();
+  });
 });
 
 // ── Resolver ─────────────────────────────────────────────────────────────────
@@ -114,22 +123,22 @@ describe("resolveExecutionOrder()", () => {
     expect(order).toHaveLength(10);
   });
 
-  it("should assign wave 0 to the step with no dependencies (parse-icp)", () => {
+  it("should assign wave 0 to the first discovery step (search_engine_prospecting)", () => {
     const order = resolveExecutionOrder(definition);
-    const parseIcp = order.find((r) => r.step.id === "parse-icp");
-    expect(parseIcp?.wave).toBe(0);
+    const first = order.find((r) => r.step.id === "search_engine_prospecting");
+    expect(first?.wave).toBe(0);
   });
 
-  it("should assign wave 1 to generate-search-queries", () => {
+  it("should assign wave 1 to directory_mining", () => {
     const order = resolveExecutionOrder(definition);
-    const step = order.find((r) => r.step.id === "generate-search-queries");
+    const step = order.find((r) => r.step.id === "directory_mining");
     expect(step?.wave).toBe(1);
   });
 
-  it("should place persist-output last (highest wave)", () => {
+  it("should place lead_enrichment_qualification last (highest wave)", () => {
     const order = resolveExecutionOrder(definition);
     const maxWave = Math.max(...order.map((r) => r.wave));
-    const last = order.find((r) => r.step.id === "persist-output");
+    const last = order.find((r) => r.step.id === "lead_enrichment_qualification");
     expect(last?.wave).toBe(maxWave);
   });
 

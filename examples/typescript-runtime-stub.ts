@@ -62,12 +62,23 @@ for (const { step, wave } of resolvedSteps) {
   }
   const deps = step.dependsOn?.length ? step.dependsOn.join(", ") : "(none)";
   const tools = step.tools?.length ? step.tools.join(", ") : "(none)";
+  const inputSummary = Array.isArray(step.inputs)
+    ? step.inputs.join(", ")
+    : step.inputs
+      ? Object.keys(step.inputs).join(", ")
+      : "(none)";
+  const outputSummary = Array.isArray(step.outputs)
+    ? step.outputs.join(", ")
+    : step.outputs
+      ? Object.keys(step.outputs).join(", ")
+      : "(none)";
+
   console.log(`  [${step.id}]`);
   console.log(`    Name:       ${step.name}`);
   console.log(`    DependsOn:  ${deps}`);
   console.log(`    Tools:      ${tools}`);
-  console.log(`    Inputs:     ${Object.keys(step.inputs).join(", ")}`);
-  console.log(`    Outputs:    ${Object.keys(step.outputs).join(", ")}`);
+  console.log(`    Inputs:     ${inputSummary}`);
+  console.log(`    Outputs:    ${outputSummary}`);
   console.log();
 }
 

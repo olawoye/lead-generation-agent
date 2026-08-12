@@ -36,20 +36,20 @@ REST, gRPC).
 
 ---
 
-## Outbound Lead Discovery — 10 Steps
+## Outbound Lead Discovery — 10 Declarative Steps
 
-| # | Step ID | Name | Wave |
-|---|---------|------|------|
-| 1 | `parse-icp` | Parse and Validate ICP Definition | 0 |
-| 2 | `generate-search-queries` | Generate Targeted Search Queries | 1 |
-| 3 | `discover-companies` | Discover Candidate Companies | 2 |
-| 4 | `deduplicate-companies` | Deduplicate and Filter Companies | 3 |
-| 5 | `enrich-companies` | Enrich Companies with Firmographic Data | 4 |
-| 6 | `identify-decision-makers` | Identify Decision-Maker Contacts | 5 |
-| 7 | `enrich-contacts` | Enrich Contacts with Professional Details | 6 |
-| 8 | `crm-suppression` | Suppress Existing CRM Records | 7 |
-| 9 | `score-and-rank` | Score and Rank Leads | 8 |
-| 10 | `persist-output` | Format and Persist Prospect List | 9 |
+| # | Phase | Step ID | Name |
+|---|---|---------|------|
+| 1 | Discover | `search_engine_prospecting` | Search Engine Prospecting |
+| 2 | Discover | `directory_mining` | Business & Professional Directory Mining |
+| 3 | Discover | `public_data_prospecting` | Public Data & Open Registers |
+| 4 | Discover | `marketplace_prospecting` | Marketplace & Platform Prospecting |
+| 5 | Discover | `website_technology_discovery` | Website & Technology Discovery |
+| 6 | Discover | `geographic_territory_prospecting` | Geographic & Territory Prospecting |
+| 7 | Identify Buying Signals | `competitive_intelligence_prospecting` | Competitive Intelligence Prospecting |
+| 8 | Identify Buying Signals | `event_community_prospecting` | Event & Community Prospecting |
+| 9 | Identify Buying Signals | `intent_trigger_based_prospecting` | Intent & Trigger-Based Prospecting |
+| 10 | Enrich & Qualify | `lead_enrichment_qualification` | Lead Enrichment & Qualification |
 
 ---
 
@@ -89,7 +89,7 @@ npx ts-node examples/typescript-runtime-stub.ts
 
 ## Definition format
 
-Every agent definition is a YAML (or JSON) document with four top-level sections:
+Every agent definition is a YAML (or JSON) document with the core top-level sections below:
 
 ```yaml
 apiVersion: "agent.definition/v1"
@@ -102,6 +102,7 @@ metadata:
 spec:
   objective: { ... }
   orar: { ... }          # Objective, Resources, Actions, Results
+  state: { ... }         # normalized shared lead state contract
   options: { ... }       # configurable parameters
   policies: { ... }      # runtime enforcement rules
   tools: [ ... ]         # logical tool requirements
@@ -118,8 +119,8 @@ for the expectations placed on runtimes.
 
 1. Copy `definitions/outbound-lead-discovery.v1.0.0.yaml`.
 2. Update `metadata.name` and `metadata.version`.
-3. Edit `spec.objective`, `spec.orar`, `spec.options`, `spec.policies`,
-   `spec.tools`, and `spec.steps`.
+3. Edit `spec.objective`, `spec.orar`, `spec.state`, `spec.options`,
+   `spec.policies`, `spec.tools`, and `spec.steps`.
 4. Validate:
    ```bash
    npm run validate definitions/my-new-agent.v1.0.0.yaml

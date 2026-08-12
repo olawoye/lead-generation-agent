@@ -26,7 +26,7 @@ export interface ResolvedStep {
 export function resolveExecutionOrder(
   definition: AgentDefinition
 ): ResolvedStep[] {
-  const steps = definition.spec.steps;
+  const steps = definition.spec.steps.filter((step) => step.enabled !== false);
   const idSet = new Set(steps.map((s) => s.id));
 
   // Validate that all dependsOn IDs exist

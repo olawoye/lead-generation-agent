@@ -57,6 +57,22 @@ of the agent's purpose.
 
 ---
 
+## `spec.state`
+
+Defines the normalized execution state shared across the workflow. This allows
+steps to progressively enrich the same lead/company record rather than producing
+unrelated lists.
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `dedupeKeys` | ✅ | Keys used to deduplicate records across all steps (e.g. `domain`, `email`, `company_name`). |
+| `leadRecord` | ✅ | Canonical record shape for the merged lead state. |
+
+`leadRecord.properties` includes fields such as `company`, `person`,
+`buying_signals`, `confidence`, `provenance`, and `qualification_score`.
+
+---
+
 ## `spec.options`
 
 Defines the configurable parameters that can be passed to the agent at
@@ -112,10 +128,16 @@ Runtimes use `dependsOn` to determine execution order (topological sort).
 | `id` | ✅ | Unique step ID (lowercase, alphanumeric, hyphens, underscores). |
 | `name` | ✅ | Human-readable step name. |
 | `description` | ✅ | What this step does. Runtimes use this as the instruction seed. |
+| `enabled` | ❌ | Whether this step is active. Defaults to `true`. |
+| `objective` | ❌ | Declarative step objective as string or object. |
 | `dependsOn` | ❌ | IDs of steps that must complete first. Defaults to `[]`. |
 | `tools` | ❌ | Tool IDs (from `spec.tools`) used by this step. |
-| `inputs` | ✅ | Named inputs with `IOProperty` definitions. |
-| `outputs` | ✅ | Named outputs with `IOProperty` definitions. |
+| `inputs` | ✅ | Declarative inputs: either string array or object map. |
+| `outputs` | ✅ | Declarative outputs: either string array or object map. |
+| `configuration` | ❌ | Step-specific runtime configuration payload. |
+| `next_steps` | ❌ | Downstream steps the runtime may route to after success. |
+| `quality_rules` | ❌ | Validation rules for step outputs. |
+| `retry_policy` | ❌ | Retry configuration and backoff policy. |
 | `policy` | ❌ | Per-step overrides for `maxRetries`, `timeoutSeconds`, `cacheResults`. |
 | `tags` | ❌ | Arbitrary string tags. |
 

@@ -6,171 +6,151 @@ metadata:
   displayName: "Outbound Lead Discovery Agent"
   version: "1.0.0"
   description: >
-    A 10-step outbound lead-discovery agent that finds, qualifies, enriches,
-    and scores potential B2B leads from publicly available sources, then
-    prepares a prioritised outreach-ready prospect list.
+    A declarative 10-step outbound lead-discovery workflow for finding,
+    qualifying, enriching, and prioritising businesses or individuals likely to
+    need a SaaS product or service in a target geography.
   tags:
     - lead-generation
     - outbound
     - b2b
     - sales-development
+    - declarative-agent
   author: "olawoye"
   license: MIT
 
 spec:
-  # ──────────────────────────────────────────────
-  # OBJECTIVE
-  # ──────────────────────────────────────────────
   objective:
     summary: >
-      Discover and qualify outbound B2B leads that match a target Ideal
-      Customer Profile (ICP) and deliver a ranked, enriched prospect list
-      ready for personalised outreach.
+      Discover, enrich, and qualify outbound leads that closely match the target
+      ICP, with progressive record enrichment and a final priority score.
     context: >
-      Sales Development Representatives (SDRs) spend a disproportionate
-      amount of time manually researching leads. This agent automates the
-      discovery-to-enrichment pipeline so SDRs can focus on high-value
-      conversations.
+      This definition describes the business workflow independently from the
+      runtime, AI provider, or MCP implementation. It focuses on the logic of
+      finding candidate companies and contacts, validating intent signals, and
+      enriching records without hard-coded execution in TypeScript.
     successCriteria:
-      - "At least `options.minLeads` qualified leads produced per run."
-      - "Every lead record includes company name, domain, decision-maker name, title, LinkedIn URL, and a qualification score ≥ 50."
-      - "No duplicate domains in the output list."
-      - "All leads satisfy the ICP filters defined in options.icpFilters."
-      - "Output file written to options.outputPath in the configured format."
+      - "At least `options.minLeads` qualified leads are produced for each run."
+      - "Each lead record includes a normalized company, contact, provenance evidence, and confidence score."
+      - "All outputs are deduplicated by domain and person identity."
+      - "Each step validates its own quality gates before passing records downstream."
+      - "The final output is a prioritized, enriched list ready for outreach."
 
-  # ──────────────────────────────────────────────
-  # ORAR
-  # ──────────────────────────────────────────────
   orar:
     objective: >
-      Build a ranked list of outbound B2B prospects that closely match the
-      target ICP so the sales team can initiate personalised outreach.
+      Build a ranked, evidence-backed prospect list that matches the target ICP in
+      the target geography and demonstrates buying intent or service need.
     resources:
-      - "ICP definition supplied in agent options (industry, company size, geography, job titles, keywords)"
-      - "Web search capability for discovering companies and contacts"
-      - "Company data enrichment source (funding, headcount, tech stack)"
-      - "Contact data enrichment source (name, title, LinkedIn, verified email)"
-      - "CRM lookup capability to suppress existing customers and blacklisted domains"
+      - "Target ICP and geo constraints supplied in options"
+      - "Search and discovery capabilities across public web, directories, registers, marketplaces, and websites"
+      - "Technology and competitive intelligence signals"
+      - "Structured enrichment sources for firmographics, contacts, and buying intent"
+      - "Shared lead state for deduplication, evidence, confidence, and scoring"
     actions:
-      - "Parse and validate the ICP definition from options"
-      - "Generate targeted search queries from ICP attributes"
-      - "Execute searches to discover candidate companies"
-      - "Deduplicate and filter companies against ICP firmographic criteria"
-      - "Enrich each company with firmographic data (funding, headcount, tech stack)"
-      - "Identify decision-maker contacts at each company"
-      - "Enrich each contact with professional details and verified email"
-      - "Filter out leads already present in the CRM or on the suppression list"
-      - "Score and rank leads using a weighted qualification model"
-      - "Format and persist the final prospect list"
+      - "Parse and validate the ICP brief and geography"
+      - "Search for candidate companies and individuals across discovery channels"
+      - "Mine structured directories and public records"
+      - "Analyze website and technology signals"
+      - "Identify buying signals and intent triggers"
+      - "Enrich records with firmographic and contact data"
+      - "Normalize and deduplicate the shared lead state"
+      - "Score, qualify, and prioritize leads"
     results:
-      - "Structured list of qualified, enriched, ranked prospects"
-      - "Each prospect includes company and contact fields plus a qualification score"
-      - "Persisted output artefact at the configured path and format"
-      - "Run summary with counts: discovered, filtered, enriched, qualified, suppressed"
+      - "A normalized and deduplicated lead dataset"
+      - "Evidence-backed company and contact records with provenance and confidence"
+      - "A ranked output list with final qualification and priority scores"
+      - "A runtime-agnostic definition reusable across runtimes and applications"
 
-  # ──────────────────────────────────────────────
-  # CONFIGURABLE OPTIONS
-  # ──────────────────────────────────────────────
+  state:
+    dedupeKeys:
+      - domain
+      - email
+      - company_name
+    leadRecord:
+      type: object
+      properties:
+        company:
+          type: object
+          description: "Canonical company record with firmographics, domain, and source evidence."
+          required: true
+        person:
+          type: object
+          description: "Canonical person or contact record with contact details and decision-maker data."
+          required: false
+        buying_signals:
+          type: array
+          description: "Buying-intent and trigger-based signals that indicate likely need."
+        confidence:
+          type: number
+          description: "Overall confidence score for the record from 0 to 1."
+          required: true
+        provenance:
+          type: array
+          description: "Evidence records including URLs, timestamps, and source metadata."
+          required: true
+        qualification_score:
+          type: number
+          description: "Final lead qualification score from 0 to 100."
+          required: true
+
   options:
     required:
-      - icpFilters
+      - brief
+      - geography
       - outputPath
     properties:
-      icpFilters:
+      brief:
+        type: string
+        description: "Simple business brief or ICP description for the outbound search."
+      geography:
         type: object
-        description: >
-          Ideal Customer Profile filters. All fields are optional but at least
-          one must be provided. Runtimes validate this object at startup.
+        description: "Geographic constraints such as city, region, country, radius, and locale."
         properties:
-          industries:
-            type: array
-            description: "Target industry verticals (e.g. SaaS, FinTech, HealthTech)."
-            items:
-              type: string
-          companySizeMin:
+          city:
+            type: string
+          state:
+            type: string
+          country:
+            type: string
+          radius_km:
             type: integer
-            description: "Minimum employee headcount."
-            minimum: 1
-          companySizeMax:
-            type: integer
-            description: "Maximum employee headcount."
-            minimum: 1
-          geographies:
-            type: array
-            description: "Target countries or regions."
-            items:
-              type: string
-          jobTitles:
-            type: array
-            description: "Target decision-maker job titles."
-            items:
-              type: string
-          keywords:
-            type: array
-            description: "Additional keywords to narrow the search."
-            items:
-              type: string
-          fundingStages:
-            type: array
-            description: "Funding stages of interest (e.g. Seed, Series A, Series B)."
-            items:
-              type: string
-          techStack:
-            type: array
-            description: "Technologies the target company must use."
-            items:
-              type: string
+            minimum: 0
+        additionalProperties: true
       outputPath:
         type: string
-        description: "File system path or storage URI where the final prospect list is written."
-      outputFormat:
-        type: string
-        description: "Output file format."
-        enum: [csv, json, jsonl]
-        default: csv
+        description: "Destination path for the final lead list output."
       minLeads:
         type: integer
-        description: "Minimum number of qualified leads the agent must produce."
+        description: "Minimum number of leads to produce before the run is considered successful."
         minimum: 1
-        default: 20
+        default: 25
       maxLeads:
         type: integer
-        description: "Maximum number of leads to include in the final list."
+        description: "Maximum number of records to include in the final ranked list."
         minimum: 1
         default: 100
       minQualificationScore:
         type: integer
-        description: "Minimum qualification score (0–100) a lead must reach to be included."
+        description: "Minimum qualification/priority threshold needed for final inclusion."
         minimum: 0
         maximum: 100
         default: 50
-      scoringWeights:
-        type: object
-        description: "Weights (0–1 each, must sum to 1) applied to the qualification scoring model."
-        properties:
-          icpFit:
-            type: number
-            description: "Weight for how closely the company matches ICP firmographic criteria."
-            default: 0.35
-          companySignals:
-            type: number
-            description: "Weight for buying-intent signals (recent funding, hiring, product launches)."
-            default: 0.25
-          contactReachability:
-            type: number
-            description: "Weight for contact data completeness and email verifiability."
-            default: 0.25
-          engagementHistory:
-            type: number
-            description: "Weight for prior engagement with the brand (content downloads, web visits, etc.)."
-            default: 0.15
-      suppressionListPath:
-        type: string
-        description: "Path to a CSV/JSON file containing domains to suppress (existing customers, competitors, etc.)."
+      languages:
+        type: array
+        description: "Languages that should be considered during discovery."
+        items:
+          type: string
+        default: ["en"]
+      countries:
+        type: array
+        description: "Target countries or subregions for discovery."
+        items:
+          type: string
+      maxResultsPerStep:
+        type: integer
+        description: "Maximum candidate results a step should accumulate before validation."
+        minimum: 1
+        default: 500
 
-  # ──────────────────────────────────────────────
-  # POLICIES
-  # ──────────────────────────────────────────────
   policies:
     maxRetries: 3
     timeoutSeconds: 600
@@ -182,477 +162,492 @@ spec:
       retentionDays: 30
     errorHandling: continue-on-error
 
-  # ──────────────────────────────────────────────
-  # TOOL REQUIREMENTS
-  # ──────────────────────────────────────────────
   tools:
-    - id: web-search
-      description: >
-        Search the public web and return a ranked list of URLs and snippets
-        matching a query string.
+    - id: google_search
+      description: "Search the public web for candidate companies and people matching the ICP."
       capabilities:
         - web-search
-        - full-text-search
+        - query-discovery
       optional: false
 
-    - id: web-scraper
-      description: >
-        Fetch and parse the content of a web page, returning structured text
-        and metadata (title, headings, links).
+    - id: maps
+      description: "Resolve geo locations, service area data, and local business presence."
       capabilities:
-        - web-scrape
-        - html-parse
+        - geocoding
+        - location-lookup
       optional: false
 
-    - id: company-enrichment
-      description: >
-        Given a company domain or name, return firmographic data: industry,
-        headcount range, funding stage, revenue estimate, headquarters,
-        tech stack, and a brief description.
+    - id: business_directory_search
+      description: "Query business directories and professional listings for candidate entities."
       capabilities:
-        - company-data-enrichment
-        - firmographics
+        - directory-search
+        - business-listing-discovery
       optional: false
 
-    - id: contact-enrichment
-      description: >
-        Given a contact name and company domain, return professional details:
-        verified email, LinkedIn URL, job title, seniority level, and
-        department.
+    - id: public_records_search
+      description: "Search public registries, business registers, and open data sources for company signals."
       capabilities:
-        - contact-data-enrichment
-        - email-verification
-        - professional-profile-lookup
+        - public-record-search
+        - business-registry-access
       optional: false
 
-    - id: crm-lookup
-      description: >
-        Query the CRM to determine whether a company domain or contact email
-        already exists as a customer, open opportunity, or suppressed record.
+    - id: marketplace_search
+      description: "Search marketplaces and platform listings for service and business activity."
       capabilities:
-        - crm-read
-        - deduplication
-      optional: true
-
-    - id: file-writer
-      description: >
-        Write structured data (arrays of objects) to a file at a specified
-        path in CSV, JSON, or JSONL format.
-      capabilities:
-        - file-write
-        - csv-serialisation
-        - json-serialisation
+        - marketplace-discovery
+        - platform-search
       optional: false
 
-  # ──────────────────────────────────────────────
-  # STEPS  (10 steps)
-  # ──────────────────────────────────────────────
-  steps:
-    # ── Step 1 ────────────────────────────────
-    - id: parse-icp
-      name: "Parse and Validate ICP Definition"
-      description: >
-        Read and validate the Ideal Customer Profile (ICP) filters supplied
-        in agent options. Normalise industry names, title variants, and
-        geographic region aliases. Produce a canonical ICP object that all
-        subsequent steps consume.
-      dependsOn: []
-      tools: []
-      inputs:
-        icpFilters:
-          type: object
-          description: "Raw ICP filters from agent options."
-          required: true
-          source: "options.icpFilters"
-        scoringWeights:
-          type: object
-          description: "Scoring weight configuration from agent options."
-          required: false
-          source: "options.scoringWeights"
-      outputs:
-        canonicalICP:
-          type: object
-          description: >
-            Normalised ICP object with resolved industry codes, standardised
-            title list, and validated geographic regions.
-        scoringWeights:
-          type: object
-          description: "Validated and normalised scoring weights (guaranteed to sum to 1)."
-      policy:
-        maxRetries: 0
-        cacheResults: true
-      tags:
-        - setup
-        - validation
+    - id: website_research
+      description: "Assess company websites, service offerings, product pages, and CTA signals."
+      capabilities:
+        - website-analysis
+        - content-scrape
+      optional: false
 
-    # ── Step 2 ────────────────────────────────
-    - id: generate-search-queries
-      name: "Generate Targeted Search Queries"
-      description: >
-        Using the canonical ICP from step 1, synthesise a set of targeted
-        web-search queries designed to surface companies that match the ICP.
-        Vary phrasing to maximise coverage: include industry + title
-        combinations, geographic modifiers, tech-stack signals, and funding
-        stage keywords.
-      dependsOn:
-        - parse-icp
-      tools: []
-      inputs:
-        canonicalICP:
-          type: object
-          description: "Canonical ICP object from the parse-icp step."
-          required: true
-          source: "parse-icp.canonicalICP"
-      outputs:
-        searchQueries:
-          type: array
-          description: >
-            List of distinct search query strings, each targeting a different
-            facet of the ICP.
-      policy:
-        maxRetries: 1
-        cacheResults: true
-      tags:
-        - query-generation
+    - id: technology_detection
+      description: "Identify technology and product indicators on company websites or online properties."
+      capabilities:
+        - technology-detection
+        - stack-analysis
+      optional: false
 
-    # ── Step 3 ────────────────────────────────
-    - id: discover-companies
-      name: "Discover Candidate Companies"
-      description: >
-        Execute the search queries produced in step 2 against the web-search
-        tool. Parse search result snippets and URLs to extract company names
-        and domains. Collect all candidate companies into a raw list before
-        any deduplication or filtering.
-      dependsOn:
-        - generate-search-queries
-      tools:
-        - web-search
-        - web-scraper
-      inputs:
-        searchQueries:
-          type: array
-          description: "Search queries from the generate-search-queries step."
-          required: true
-          source: "generate-search-queries.searchQueries"
-        maxLeads:
-          type: integer
-          description: "Upper bound on leads; used to limit how many searches are executed."
-          required: false
-          source: "options.maxLeads"
-      outputs:
-        candidateCompanies:
-          type: array
-          description: >
-            Raw list of candidate company records, each with at minimum:
-            name, domain, and sourceUrl.
-      policy:
-        maxRetries: 3
-        timeoutSeconds: 180
-        cacheResults: false
-      tags:
-        - discovery
-        - web-search
+    - id: competitive_intelligence_search
+      description: "Search for competitors, market activity, and expansion or service signals."
+      capabilities:
+        - market-intelligence
+        - competitive-analysis
+      optional: false
 
-    # ── Step 4 ────────────────────────────────
-    - id: deduplicate-companies
-      name: "Deduplicate and Filter Companies"
-      description: >
-        Remove duplicate companies (same domain), apply ICP firmographic
-        filters (industry, company size, geography, funding stage, tech stack),
-        and discard any companies whose domain appears in the suppression list.
-        Output a clean, deduplicated list of companies that pass initial
-        screening.
-      dependsOn:
-        - discover-companies
-        - parse-icp
-      tools:
-        - crm-lookup
-      inputs:
-        candidateCompanies:
-          type: array
-          description: "Raw company list from the discover-companies step."
-          required: true
-          source: "discover-companies.candidateCompanies"
-        canonicalICP:
-          type: object
-          description: "Canonical ICP for filter criteria."
-          required: true
-          source: "parse-icp.canonicalICP"
-        suppressionListPath:
-          type: string
-          description: "Path to the suppression list file (from options)."
-          required: false
-          source: "options.suppressionListPath"
-      outputs:
-        filteredCompanies:
-          type: array
-          description: >
-            Deduplicated companies that passed ICP filters and suppression
-            checks.
-        suppressedCount:
-          type: integer
-          description: "Number of companies removed by the suppression list."
-        duplicateCount:
-          type: integer
-          description: "Number of duplicates removed."
-      policy:
-        maxRetries: 2
-        cacheResults: false
-      tags:
-        - deduplication
-        - filtering
+    - id: events_search
+      description: "Search for events, communities, and local business ecosystems relevant to the ICP."
+      capabilities:
+        - event-discovery
+        - community-lookup
+      optional: false
 
-    # ── Step 5 ────────────────────────────────
-    - id: enrich-companies
-      name: "Enrich Companies with Firmographic Data"
-      description: >
-        For each company in the filtered list, call the company-enrichment
-        tool to retrieve detailed firmographic data: industry classification,
-        headcount range, estimated annual revenue, funding stage, headquarters
-        location, technology stack, and a brief company description. Attach
-        the enriched data to each company record.
-      dependsOn:
-        - deduplicate-companies
-      tools:
+    - id: signal_monitoring
+      description: "Look for trigger-based signals such as hiring, funding, launches, or business expansion."
+      capabilities:
+        - intent-signal-detection
+        - trigger-monitoring
+      optional: false
+
+    - id: company_enrichment
+      description: "Enhance company records with firmographic, operational, and technology metadata."
+      capabilities:
         - company-enrichment
-      inputs:
-        filteredCompanies:
-          type: array
-          description: "Filtered company list from the deduplicate-companies step."
-          required: true
-          source: "deduplicate-companies.filteredCompanies"
-      outputs:
-        enrichedCompanies:
-          type: array
-          description: >
-            Company records augmented with firmographic fields. Records where
-            enrichment failed are included with a partial flag set to true.
-        enrichmentFailures:
-          type: array
-          description: "Domains for which enrichment could not be completed."
-      policy:
-        maxRetries: 3
-        timeoutSeconds: 240
-        cacheResults: true
-      tags:
-        - enrichment
         - firmographics
+      optional: false
 
-    # ── Step 6 ────────────────────────────────
-    - id: identify-decision-makers
-      name: "Identify Decision-Maker Contacts"
-      description: >
-        For each enriched company, search for contacts who hold job titles
-        matching the ICP target titles. Use the web-search tool and the
-        company website to discover names, job titles, and LinkedIn profile
-        URLs of decision-makers. Aim for one to three contacts per company
-        to support multi-threading.
-      dependsOn:
-        - enrich-companies
-        - parse-icp
-      tools:
-        - web-search
-        - web-scraper
-      inputs:
-        enrichedCompanies:
-          type: array
-          description: "Enriched company list from the enrich-companies step."
-          required: true
-          source: "enrich-companies.enrichedCompanies"
-        targetTitles:
-          type: array
-          description: "Normalised job title list from the canonical ICP."
-          required: true
-          source: "parse-icp.canonicalICP"
-      outputs:
-        companiesWithContacts:
-          type: array
-          description: >
-            Company records each containing a contacts array with at least
-            name, title, and LinkedIn URL for each identified decision-maker.
-      policy:
-        maxRetries: 2
-        timeoutSeconds: 300
-        cacheResults: false
-      tags:
-        - contact-discovery
-        - decision-makers
-
-    # ── Step 7 ────────────────────────────────
-    - id: enrich-contacts
-      name: "Enrich Contacts with Professional Details"
-      description: >
-        For each contact identified in step 6, call the contact-enrichment
-        tool to retrieve a verified email address, confirm the LinkedIn URL,
-        retrieve current job title and department, and assess email
-        deliverability. Discard contacts whose email cannot be verified.
-      dependsOn:
-        - identify-decision-makers
-      tools:
+    - id: contact_enrichment
+      description: "Enhance person records with contact details, role information, and reachability insights."
+      capabilities:
         - contact-enrichment
-      inputs:
-        companiesWithContacts:
-          type: array
-          description: "Companies with identified contacts from the identify-decision-makers step."
-          required: true
-          source: "identify-decision-makers.companiesWithContacts"
-      outputs:
-        enrichedLeads:
-          type: array
-          description: >
-            Flat list of lead records, each combining company firmographic
-            data with a single enriched contact. One record per contact.
-        unverifiedCount:
-          type: integer
-          description: "Number of contacts discarded because their email could not be verified."
-      policy:
-        maxRetries: 3
-        timeoutSeconds: 240
-        cacheResults: true
-      tags:
-        - contact-enrichment
-        - email-verification
+        - person-identity
+      optional: false
 
-    # ── Step 8 ────────────────────────────────
-    - id: crm-suppression
-      name: "Suppress Existing CRM Records"
+    - id: lead_scoring
+      description: "Compute qualification and priority scores for enriched leads."
+      capabilities:
+        - lead-scoring
+        - prioritization
+      optional: false
+
+  steps:
+    - id: search_engine_prospecting
+      name: "Search Engine Prospecting"
       description: >
-        Query the CRM to check whether each lead (by company domain and
-        contact email) already exists as an active customer, open opportunity,
-        or previously suppressed record. Remove any lead that matches. This
-        step is a no-op if the crm-lookup tool is unavailable.
-      dependsOn:
-        - enrich-contacts
+        Search public web results for businesses and people who match the target
+        ICP and geography.
+      enabled: true
+      objective: "Discover candidate businesses matching the ICP and local geography."
+      dependsOn: []
       tools:
-        - crm-lookup
+        - google_search
+        - maps
       inputs:
-        enrichedLeads:
-          type: array
-          description: "Enriched lead list from the enrich-contacts step."
-          required: true
-          source: "enrich-contacts.enrichedLeads"
+        - icp
+        - geography
+      configuration:
+        queries: []
+        max_results: 500
+        countries: []
+        languages:
+          - en
       outputs:
-        unsuppressedLeads:
-          type: array
-          description: "Leads that are not present in the CRM or suppression list."
-        crmSuppressedCount:
-          type: integer
-          description: "Number of leads removed because they exist in the CRM."
-      policy:
-        maxRetries: 2
-        cacheResults: false
-      tags:
-        - suppression
-        - crm
+        - prospect_records
+      next_steps:
+        - directory_mining
+        - website_technology_discovery
+      quality_rules:
+        - id: search_result_relevance
+          rule: "candidate_has_name_or_domain"
+          severity: "error"
+          message: "Every discovered record must include a candidate name or domain."
+      retry_policy:
+        max_attempts: 3
+        backoff_ms: 1000
+        backoff_multiplier: 2
+        max_backoff_ms: 20000
+        retry_on:
+          - timeout
+          - rate_limit
 
-    # ── Step 9 ────────────────────────────────
-    - id: score-and-rank
-      name: "Score and Rank Leads"
+    - id: directory_mining
+      name: "Business & Professional Directory Mining"
       description: >
-        Apply the weighted qualification scoring model to each lead.
-        Compute sub-scores for ICP fit, company buying signals, contact
-        reachability, and engagement history (where available). Combine
-        sub-scores using the weights from options.scoringWeights into a
-        final qualification score (0–100). Filter out leads below
-        options.minQualificationScore. Sort the remaining leads in
-        descending score order and truncate to options.maxLeads.
+        Query structured directories and professional listings to recover more
+        candidate records and service providers.
+      enabled: true
+      objective: "Find credible business records in structured directories and listing sources."
       dependsOn:
-        - crm-suppression
-        - parse-icp
-      tools: []
-      inputs:
-        unsuppressedLeads:
-          type: array
-          description: "Leads from the crm-suppression step."
-          required: true
-          source: "crm-suppression.unsuppressedLeads"
-        scoringWeights:
-          type: object
-          description: "Validated scoring weights from the parse-icp step."
-          required: true
-          source: "parse-icp.scoringWeights"
-        minQualificationScore:
-          type: integer
-          description: "Minimum score threshold from agent options."
-          required: false
-          source: "options.minQualificationScore"
-        maxLeads:
-          type: integer
-          description: "Maximum number of leads to retain."
-          required: false
-          source: "options.maxLeads"
-      outputs:
-        rankedLeads:
-          type: array
-          description: >
-            Final ranked list of qualified leads sorted by qualification score
-            descending, capped at maxLeads entries.
-        runStats:
-          type: object
-          description: >
-            Summary statistics: discovered, filtered, enriched, qualified,
-            suppressed, and final counts.
-      policy:
-        maxRetries: 1
-        cacheResults: false
-      tags:
-        - scoring
-        - ranking
-
-    # ── Step 10 ───────────────────────────────
-    - id: persist-output
-      name: "Format and Persist Prospect List"
-      description: >
-        Serialise the ranked lead list into the format specified by
-        options.outputFormat (CSV, JSON, or JSONL) and write it to
-        options.outputPath. Include a run-summary header or metadata
-        block depending on the format. Verify that the written file
-        is readable and that at least options.minLeads records were
-        produced; raise an error if the minimum is not met.
-      dependsOn:
-        - score-and-rank
+        - search_engine_prospecting
       tools:
-        - file-writer
+        - business_directory_search
       inputs:
-        rankedLeads:
-          type: array
-          description: "Ranked leads from the score-and-rank step."
-          required: true
-          source: "score-and-rank.rankedLeads"
-        runStats:
-          type: object
-          description: "Run statistics from the score-and-rank step."
-          required: true
-          source: "score-and-rank.runStats"
-        outputPath:
-          type: string
-          description: "Output file path from agent options."
-          required: true
-          source: "options.outputPath"
-        outputFormat:
-          type: string
-          description: "Output format from agent options."
-          required: false
-          source: "options.outputFormat"
-        minLeads:
-          type: integer
-          description: "Minimum leads threshold; the step raises an error if not met."
-          required: false
-          source: "options.minLeads"
+        - icp
+        - geography
+      configuration:
+        providers: []
+        max_results: 300
       outputs:
-        outputUri:
-          type: string
-          description: "URI or file path of the written output artefact."
-        recordsWritten:
-          type: integer
-          description: "Number of lead records written to the output file."
-        runSummary:
-          type: object
-          description: "Final run summary including all pipeline counts and outputUri."
-      policy:
-        maxRetries: 2
-        timeoutSeconds: 60
-        cacheResults: false
-      tags:
-        - output
-        - persistence
+        - directory_records
+      next_steps:
+        - public_data_prospecting
+        - website_technology_discovery
+      quality_rules:
+        - id: directory_record_validity
+          rule: "record_has_business_name_or_url"
+          severity: "error"
+          message: "Directory records must include a business name or URL."
+      retry_policy:
+        max_attempts: 3
+        backoff_ms: 1000
+        backoff_multiplier: 2
+        max_backoff_ms: 15000
+        retry_on:
+          - timeout
+          - service_unavailable
+
+    - id: public_data_prospecting
+      name: "Public Data & Open Registers"
+      description: >
+        Check public registers, company registries, and open data sources for legal,
+        operational, and local business indicators.
+      enabled: true
+      objective: "Validate business existence, registration, and local footprint in public data."
+      dependsOn:
+        - directory_mining
+      tools:
+        - public_records_search
+      inputs:
+        - icp
+        - geography
+        - prospect_records
+      configuration:
+        include_registries: true
+        max_results: 250
+      outputs:
+        - public_records
+      next_steps:
+        - marketplace_prospecting
+        - website_technology_discovery
+      quality_rules:
+        - id: public_data_coverage
+          rule: "record_has_source_url_or_registry_id"
+          severity: "warning"
+          message: "Public records should include source URL or registry identifier when available."
+      retry_policy:
+        max_attempts: 3
+        backoff_ms: 1200
+        backoff_multiplier: 2
+        max_backoff_ms: 20000
+        retry_on:
+          - timeout
+          - rate_limit
+
+    - id: marketplace_prospecting
+      name: "Marketplace & Platform Prospecting"
+      description: >
+        Search marketplaces and platform listings for relevant businesses, service
+        categories, or vendor activity in the target market.
+      enabled: true
+      objective: "Identify demand-side activity and business presence in relevant platforms."
+      dependsOn:
+        - public_data_prospecting
+      tools:
+        - marketplace_search
+      inputs:
+        - icp
+        - geography
+      configuration:
+        categories: []
+        max_results: 200
+      outputs:
+        - marketplace_records
+      next_steps:
+        - website_technology_discovery
+        - geographic_territory_prospecting
+      quality_rules:
+        - id: marketplace_signal_required
+          rule: "platform_record_has_name_or_url"
+          severity: "error"
+          message: "Marketplace records must include a recognizable name or URL."
+      retry_policy:
+        max_attempts: 2
+        backoff_ms: 1000
+        backoff_multiplier: 2
+        max_backoff_ms: 10000
+        retry_on:
+          - timeout
+
+    - id: website_technology_discovery
+      name: "Website & Technology Discovery"
+      description: >
+        Analyze websites and online technology signals to determine product/service
+        relevance and likely buying intent.
+      enabled: true
+      objective: "Assess each opportunity's website, service relevance, and technology footprint."
+      dependsOn:
+        - search_engine_prospecting
+        - directory_mining
+        - public_data_prospecting
+        - marketplace_prospecting
+      tools:
+        - website_research
+        - technology_detection
+      inputs:
+        - prospect_records
+        - directory_records
+        - public_records
+        - marketplace_records
+      configuration:
+        max_pages: 5
+        detect_ctas: true
+        min_technology_signal_score: 0.4
+      outputs:
+        - website_signals
+        - technology_signals
+      next_steps:
+        - competitive_intelligence_prospecting
+        - geographic_territory_prospecting
+      quality_rules:
+        - id: website_signal_validity
+          rule: "signal_has_evidence"
+          severity: "warning"
+          message: "Website signals should include positive evidence from page content or structure."
+      retry_policy:
+        max_attempts: 3
+        backoff_ms: 1500
+        backoff_multiplier: 2
+        max_backoff_ms: 20000
+        retry_on:
+          - timeout
+          - http_429
+
+    - id: geographic_territory_prospecting
+      name: "Geographic & Territory Prospecting"
+      description: >
+        Validate whether the company is active in the target region and whether the
+        service area or local geography matches the sales objective.
+      enabled: true
+      objective: "Confirm the target geography and local service footprint for each prospect."
+      dependsOn:
+        - marketplace_prospecting
+      tools:
+        - maps
+      inputs:
+        - icp
+        - geography
+        - prospect_records
+      configuration:
+        radius_km: 50
+        include_local_presence: true
+      outputs:
+        - territory_records
+      next_steps:
+        - competitive_intelligence_prospecting
+        - event_community_prospecting
+      quality_rules:
+        - id: geography_match
+          rule: "location_match_required_when_geo_filter_set"
+          severity: "warning"
+          message: "Geographic fit should be checked when a local or regional filter is supplied."
+      retry_policy:
+        max_attempts: 2
+        backoff_ms: 800
+        backoff_multiplier: 2
+        max_backoff_ms: 12000
+        retry_on:
+          - timeout
+
+    - id: competitive_intelligence_prospecting
+      name: "Competitive Intelligence Prospecting"
+      description: >
+        Look for market activity, competitor presence, adjacent category signals,
+        and service demand cues that indicate readiness or need.
+      enabled: true
+      objective: "Identify competitive or adjacent signal strength that indicates likely need."
+      dependsOn:
+        - website_technology_discovery
+        - geographic_territory_prospecting
+      tools:
+        - competitive_intelligence_search
+      inputs:
+        - prospect_records
+        - website_signals
+        - technology_signals
+      configuration:
+        max_results: 200
+        categories: []
+      outputs:
+        - competition_records
+      next_steps:
+        - event_community_prospecting
+        - intent_trigger_based_prospecting
+      quality_rules:
+        - id: competitive_signal_present
+          rule: "market_signal_or_rival_presence_exists"
+          severity: "warning"
+          message: "A competitive signal increases score but is not required to continue."
+      retry_policy:
+        max_attempts: 2
+        backoff_ms: 1200
+        backoff_multiplier: 2
+        max_backoff_ms: 15000
+        retry_on:
+          - timeout
+          - rate_limit
+
+    - id: event_community_prospecting
+      name: "Event & Community Prospecting"
+      description: >
+        Search events, communities, and local ecosystems to find businesses or
+        founders that may be actively building or scaling.
+      enabled: true
+      objective: "Find signals from communities and events that suggest a business is active or in growth mode."
+      dependsOn:
+        - geographic_territory_prospecting
+        - competitive_intelligence_prospecting
+      tools:
+        - events_search
+      inputs:
+        - icp
+        - geography
+        - prospect_records
+      configuration:
+        event_types: []
+        max_results: 150
+      outputs:
+        - event_records
+      next_steps:
+        - intent_trigger_based_prospecting
+        - lead_enrichment_qualification
+      quality_rules:
+        - id: event_signal_relevance
+          rule: "event_record_has_name_or_date"
+          severity: "warning"
+          message: "Event records should contain a name or date where possible."
+      retry_policy:
+        max_attempts: 2
+        backoff_ms: 1000
+        backoff_multiplier: 2
+        max_backoff_ms: 12000
+        retry_on:
+          - timeout
+
+    - id: intent_trigger_based_prospecting
+      name: "Intent & Trigger-Based Prospecting"
+      description: >
+        Detect intent triggers such as hiring, funding, launch activity, growth,
+        or expansion signals that indicate buying readiness.
+      enabled: true
+      objective: "Identify behavioral or market triggers that improve the chance of a relevant conversation."
+      dependsOn:
+        - competitive_intelligence_prospecting
+        - event_community_prospecting
+      tools:
+        - signal_monitoring
+      inputs:
+        - prospect_records
+        - geography
+        - technology_signals
+      configuration:
+        trigger_types:
+          - hiring
+          - funding
+          - launch
+          - expansion
+        max_results: 200
+      outputs:
+        - intent_records
+      next_steps:
+        - lead_enrichment_qualification
+      quality_rules:
+        - id: trigger_signal_present
+          rule: "signal_has_trigger_type_and_evidence"
+          severity: "warning"
+          message: "Intent triggers should contain a clear business trigger and supporting evidence."
+      retry_policy:
+        max_attempts: 3
+        backoff_ms: 1200
+        backoff_multiplier: 2
+        max_backoff_ms: 20000
+        retry_on:
+          - timeout
+          - rate_limit
+
+    - id: lead_enrichment_qualification
+      name: "Lead Enrichment & Qualification"
+      description: >
+        Enrich final leads with company and contact data, normalize the shared state,
+        and score them to determine final outreach priority.
+      enabled: true
+      objective: "Normalize, enrich, deduplicate, score, and prioritize the final lead dataset."
+      dependsOn:
+        - event_community_prospecting
+        - intent_trigger_based_prospecting
+      tools:
+        - company_enrichment
+        - contact_enrichment
+        - lead_scoring
+      inputs:
+        - prospect_records
+        - directory_records
+        - public_records
+        - marketplace_records
+        - website_signals
+        - technology_signals
+        - territory_records
+        - competition_records
+        - event_records
+        - intent_records
+      configuration:
+        min_qualification_score: 50
+        max_results: 100
+        deduplicate_by:
+          - domain
+          - email
+          - company_name
+      outputs:
+        - qualified_leads
+      next_steps: []
+      quality_rules:
+        - id: normalized_record_required
+          rule: "lead_has_company_and_confidence_score"
+          severity: "error"
+          message: "Each final lead must have a normalized company and a qualification score."
+        - id: deduplication_complete
+          rule: "duplicate_domains_removed"
+          severity: "error"
+          message: "Final output must not contain duplicate domains or duplicate lead identities."
+      retry_policy:
+        max_attempts: 3
+        backoff_ms: 1500
+        backoff_multiplier: 2
+        max_backoff_ms: 25000
+        retry_on:
+          - timeout
+          - rate_limit
+

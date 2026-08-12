@@ -15,6 +15,9 @@ the agent does, not *how* to do it. The runtime is responsible for:
 - Executing steps in dependency order.
 - Enforcing policies.
 - Wiring step inputs/outputs.
+- Keeping a shared normalized lead state across the workflow without hard-coding the business logic.
+
+The runtime must treat each step as a declarative step definition with fields like `enabled`, `objective`, `inputs`, `tools`, `configuration`, `outputs`, `next_steps`, `quality_rules`, and `retry_policy`.
 
 ---
 
@@ -57,12 +60,19 @@ The runtime **must not** hard-code tool implementations inside the definition.
 
 ## Input/output wiring
 
-Each step input may declare a `source` in `"stepId.outputName"` or
-`"options.fieldName"` notation. The runtime:
+Each step may declare either a list of input names or an object map of named
+values. The runtime must resolve the step’s declared inputs from:
 
-- Before executing a step, resolves all `source` references from
-  completed step output stores and the agent options object.
-- Validates resolved values against the `type` declared in `IOProperty`.
+- the shared normalized state
+- prior step outputs
+- agent `options`
+
+For object-based inputs, a runtime may still use `source` references in the
+`"stepId.outputName"` or `"options.fieldName"` notation. The runtime:
+
+- Before executing a step, resolves all required input values from the shared state or upstream outputs.
+- Validates resolved values against the expected data contract.
+- Keeps `confidence`, `provenance`, `buying_signals`, and `qualification_score` attached to the evolving lead state instead of discarding them.
 
 ---
 
@@ -81,6 +91,25 @@ Each step input may declare a `source` in `"stepId.outputName"` or
 
 ---
 
+## Shared state contract
+
+The definition declares a `spec.state` block used to maintain a single normalized,
+deduplicated lead state through the workflow. The runtime must treat this as the
+execution state and progressively enrich it as each step produces new evidence.
+
+Required semantics:
+
+- `state.dedupeKeys` defines the identity keys used to merge records.
+- `state.leadRecord.properties.company` carries the canonical company data.
+- `state.leadRecord.properties.person` carries person/contact data when available.
+- `state.leadRecord.properties.buying_signals` collects buying-intent evidence.
+- `state.leadRecord.properties.confidence` tracks confidence from 0 to 1.
+- `state.leadRecord.properties.provenance` stores source URLs, timestamps, and evidence.
+- `state.leadRecord.properties.qualification_score` reflects the final prioritized score from 0 to 100.
+
+The runtime must not create disconnected result lists when a record is already
+part of the shared state; it must merge and enrich the canonical record instead.
+
 ## What the runtime must NOT do
 
 - Reference any specific AI provider in the step execution logic derived
@@ -88,6 +117,7 @@ Each step input may declare a `source` in `"stepId.outputName"` or
 - Alter `metadata.version` of the definition at runtime.
 - Skip policy enforcement.
 - Execute steps in a different order than the topological sort requires.
+- Replace the normalized shared state with ad-hoc per-step output lists.
 
 ---
 

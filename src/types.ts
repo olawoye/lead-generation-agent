@@ -37,6 +37,7 @@ export interface Metadata {
 export interface AgentSpec {
   objective: Objective;
   orar: ORAR;
+  state?: SharedStateSchema;
   options?: OptionsSchema;
   policies?: Policies;
   tools?: ToolRequirement[];
@@ -94,6 +95,22 @@ export interface Policies {
   errorHandling?: "fail-fast" | "continue-on-error" | "rollback";
 }
 
+export interface SharedStateSchema {
+  dedupeKeys: string[];
+  leadRecord: {
+    type: string;
+    properties: Record<string, SharedStateField>;
+  };
+}
+
+export interface SharedStateField {
+  type: string;
+  description: string;
+  required?: boolean;
+  items?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
 // ── Tool requirement ────────────────────────────────────────────────────────
 
 export interface ToolRequirement {
@@ -109,12 +126,25 @@ export interface Step {
   id: string;
   name: string;
   description: string;
+  enabled?: boolean;
+  objective?: string | StepObjective;
   dependsOn?: string[];
   tools?: string[];
-  inputs: Record<string, IOProperty>;
-  outputs: Record<string, IOProperty>;
+  inputs?: string[] | Record<string, IOProperty>;
+  outputs?: string[] | Record<string, IOProperty>;
+  configuration?: Record<string, unknown>;
+  next_steps?: string[];
+  quality_rules?: QualityRule[];
+  retry_policy?: RetryPolicy;
   policy?: StepPolicy;
   tags?: string[];
+}
+
+export interface StepObjective {
+  summary?: string;
+  details?: string;
+  measurable?: string;
+  sources?: string[];
 }
 
 export interface IOProperty {
@@ -124,6 +154,23 @@ export interface IOProperty {
   /** For inputs: "stepId.outputName" reference to a prior step output or "options.fieldName". */
   source?: string;
   [key: string]: unknown;
+}
+
+export interface QualityRule {
+  id?: string;
+  rule: string;
+  severity?: "error" | "warning" | "info";
+  message?: string;
+  params?: Record<string, unknown>;
+}
+
+export interface RetryPolicy {
+  max_attempts?: number;
+  backoff_ms?: number;
+  backoff_multiplier?: number;
+  max_backoff_ms?: number;
+  retry_on?: string[];
+  do_not_retry_on?: string[];
 }
 
 export interface StepPolicy {

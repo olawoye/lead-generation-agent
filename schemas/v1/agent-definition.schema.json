@@ -70,6 +70,9 @@
         "orar": {
           "$ref": "#/definitions/ORAR"
         },
+        "state": {
+          "$ref": "#/definitions/SharedStateSchema"
+        },
         "options": {
           "$ref": "#/definitions/OptionsSchema"
         },
@@ -182,6 +185,57 @@
         }
       }
     },
+    "SharedStateSchema": {
+      "type": "object",
+      "required": ["dedupeKeys", "leadRecord"],
+      "additionalProperties": false,
+      "description": "The normalized execution state used across the workflow. Records are progressively enriched and deduplicated rather than treated as disconnected lists.",
+      "properties": {
+        "dedupeKeys": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Fields used to deduplicate records across steps, such as domain, email, or company_name."
+        },
+        "leadRecord": {
+          "type": "object",
+          "required": ["type", "properties"],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["object"]
+            },
+            "properties": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/definitions/SharedStateField"
+              }
+            }
+          }
+        }
+      }
+    },
+    "SharedStateField": {
+      "type": "object",
+      "required": ["type", "description"],
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean",
+          "default": false
+        },
+        "items": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
     "Policies": {
       "type": "object",
       "additionalProperties": false,
@@ -257,7 +311,7 @@
     "Step": {
       "type": "object",
       "required": ["id", "name", "description", "inputs", "outputs"],
-      "additionalProperties": false,
+      "additionalProperties": true,
       "properties": {
         "id": {
           "type": "string",
@@ -270,6 +324,18 @@
         "description": {
           "type": "string",
           "description": "What this step does. Runtime uses this as the prompt/instruction seed."
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether this step is active in the workflow. Disabled steps are skipped by the runtime.",
+          "default": true
+        },
+        "objective": {
+          "description": "Declarative objective for the step. Can be a short string or a structured object.",
+          "oneOf": [
+            { "type": "string" },
+            { "$ref": "#/definitions/StepObjective" }
+          ]
         },
         "dependsOn": {
           "type": "array",
@@ -284,19 +350,114 @@
           "default": []
         },
         "inputs": {
-          "type": "object",
-          "description": "Named inputs this step requires. Values are JSON Schema fragments.",
-          "additionalProperties": { "$ref": "#/definitions/IOProperty" }
+          "description": "Declared inputs for this step. Can be an ordered string array or an object keyed by input name.",
+          "oneOf": [
+            {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            {
+              "type": "object",
+              "additionalProperties": { "$ref": "#/definitions/IOProperty" }
+            }
+          ]
         },
         "outputs": {
+          "description": "Declared outputs for this step. Can be an ordered string array or an object keyed by output name.",
+          "oneOf": [
+            {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            {
+              "type": "object",
+              "additionalProperties": { "$ref": "#/definitions/IOProperty" }
+            }
+          ]
+        },
+        "configuration": {
           "type": "object",
-          "description": "Named outputs this step produces. Values are JSON Schema fragments.",
-          "additionalProperties": { "$ref": "#/definitions/IOProperty" }
+          "description": "Step-specific runtime configuration values.",
+          "additionalProperties": true
+        },
+        "next_steps": {
+          "type": "array",
+          "description": "Explicit downstream steps that may follow this step when execution succeeds.",
+          "items": { "type": "string" }
+        },
+        "quality_rules": {
+          "type": "array",
+          "description": "Rules that validate the step output before it can proceed to the next step.",
+          "items": { "$ref": "#/definitions/QualityRule" }
+        },
+        "retry_policy": {
+          "$ref": "#/definitions/RetryPolicy"
         },
         "policy": {
           "$ref": "#/definitions/StepPolicy"
         },
         "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "StepObjective": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "summary": { "type": "string" },
+        "details": { "type": "string" },
+        "measurable": { "type": "string" },
+        "sources": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "QualityRule": {
+      "type": "object",
+      "required": ["rule"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string" },
+        "rule": { "type": "string" },
+        "severity": {
+          "type": "string",
+          "enum": ["error", "warning", "info"]
+        },
+        "message": { "type": "string" },
+        "params": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "RetryPolicy": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "max_attempts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "backoff_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "backoff_multiplier": {
+          "type": "number",
+          "minimum": 1
+        },
+        "max_backoff_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "retry_on": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "do_not_retry_on": {
           "type": "array",
           "items": { "type": "string" }
         }
