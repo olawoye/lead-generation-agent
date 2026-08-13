@@ -128,6 +128,28 @@ for the expectations placed on runtimes.
 
 ---
 
+## Architectural guardrails and TODOs
+
+This repository is intentionally a declarative workflow source of truth. It should not become a live runtime state store.
+
+### Guardrails
+
+- Keep all workflow definitions versioned and stateless.
+- Do not persist execution checkpoints, tenant job history, retries, or billing data here.
+- Keep tool IDs abstract and capability-based.
+- Keep runtime orchestration outside this repo.
+- Keep the schema authoritative; generated TypeScript types are helper-only.
+
+### TODOs
+
+- [ ] Define a formal runtime handoff contract for resume/checkpoint payloads.
+- [ ] Document the exact host-side persistence responsibilities for the SaaS layer.
+- [ ] Add examples of versioning and migration between workflow definitions.
+- [ ] Add clearer examples of runtime-generated status events and app-owned persistence.
+- [ ] Keep business logic declarative and provider-neutral.
+
+---
+
 ## Versioning
 
 Definitions are versioned independently of this repository.  

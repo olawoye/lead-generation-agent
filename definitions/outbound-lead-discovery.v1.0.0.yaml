@@ -163,25 +163,25 @@ spec:
     errorHandling: continue-on-error
 
   tools:
-    - id: google_search
+    - id: web_search
       description: "Search the public web for candidate companies and people matching the ICP."
       capabilities:
+        - web_search
         - web-search
-        - query-discovery
       optional: false
 
-    - id: maps
+    - id: maps_search_places
       description: "Resolve geo locations, service area data, and local business presence."
       capabilities:
-        - geocoding
-        - location-lookup
+        - maps_search_places
+        - maps-search
       optional: false
 
-    - id: business_directory_search
+    - id: company_directory_search
       description: "Query business directories and professional listings for candidate entities."
       capabilities:
-        - directory-search
-        - business-listing-discovery
+        - company_directory_search
+        - business-directory
       optional: false
 
     - id: public_records_search
@@ -205,11 +205,11 @@ spec:
         - content-scrape
       optional: false
 
-    - id: technology_detection
+    - id: detect_technologies
       description: "Identify technology and product indicators on company websites or online properties."
       capabilities:
         - technology-detection
-        - stack-analysis
+        - detect_technologies
       optional: false
 
     - id: competitive_intelligence_search
@@ -233,18 +233,18 @@ spec:
         - trigger-monitoring
       optional: false
 
-    - id: company_enrichment
+    - id: enrich_company
       description: "Enhance company records with firmographic, operational, and technology metadata."
       capabilities:
         - company-enrichment
-        - firmographics
+        - enrich_company
       optional: false
 
-    - id: contact_enrichment
+    - id: enrich_person
       description: "Enhance person records with contact details, role information, and reachability insights."
       capabilities:
-        - contact-enrichment
-        - person-identity
+        - person-enrichment
+        - enrich_person
       optional: false
 
     - id: lead_scoring
@@ -264,8 +264,8 @@ spec:
       objective: "Discover candidate businesses matching the ICP and local geography."
       dependsOn: []
       tools:
-        - google_search
-        - maps
+        - web_search
+        - maps_search_places
       inputs:
         - icp
         - geography
@@ -304,7 +304,7 @@ spec:
       dependsOn:
         - search_engine_prospecting
       tools:
-        - business_directory_search
+        - company_directory_search
       inputs:
         - icp
         - geography
@@ -415,8 +415,8 @@ spec:
         - public_data_prospecting
         - marketplace_prospecting
       tools:
-        - website_research
-        - technology_detection
+        - website_content_research
+        - detect_technologies
       inputs:
         - prospect_records
         - directory_records
@@ -456,7 +456,7 @@ spec:
       dependsOn:
         - marketplace_prospecting
       tools:
-        - maps
+        - maps_search_places
       inputs:
         - icp
         - geography
@@ -609,8 +609,8 @@ spec:
         - event_community_prospecting
         - intent_trigger_based_prospecting
       tools:
-        - company_enrichment
-        - contact_enrichment
+        - enrich_company
+        - enrich_person
         - lead_scoring
       inputs:
         - prospect_records

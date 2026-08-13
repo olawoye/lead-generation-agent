@@ -46,6 +46,31 @@ The agent definition is reusable across runtimes and applications. It should des
 - Each of the 10 steps must be a declarative Step Definition object with explicit inputs, outputs, tool references, configuration, quality rules, and retry behavior.
 - Do not add hard-coded orchestration logic here.
 - Keep the schema authoritative; TypeScript typings are convenience-only.
+- Keep this repo stateless: no execution checkpoints, no run history, no tenant/job persistence, no runtime queue state, and no app-level billing or auditing data.
+- Store all live operational state in the SaaS app / worker layer, not in the definition repository.
+
+---
+
+## Minimal architectural principle
+
+This repo defines the declarative workflow contract only. It should stay a versioned specification package and not become a live operational database.
+
+The app layer owns durable state for:
+- run status
+- retry and cancellation state
+- checkpoints
+- per-tenant job records
+- audit and billing metadata
+
+---
+
+## TODOs
+
+- [ ] Keep all workflow definitions versioned and declarative.
+- [ ] Keep tool references abstract and capability-based.
+- [ ] Document the runtime contract for checkpoint and resume semantics.
+- [ ] Do not add persistence, queueing, or tenant state to this repo unless a concrete host-level requirement demands it.
+- [ ] Keep the schema as the source of truth; generated types are convenience-only.
 
 ---
 
