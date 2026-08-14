@@ -1,0 +1,241 @@
+{
+  "apiVersion": "agent.manifest/v1",
+  "kind": "RuntimeManifest",
+  "metadata": {
+    "name": "outbound-lead-discovery-sample",
+    "displayName": "Outbound Lead Discovery Sample Manifest",
+    "version": "1.0.0",
+    "description": "Minimal SaaS-side MCP server manifest for the outbound lead discovery workflow. This is a sample contract for app-level runtime wiring and is intentionally independent from the declarative workflow definition."
+  },
+  "runtime": {
+    "orchestrator": "lead-generation-runtime-typescript",
+    "executionModel": "stateless",
+    "persistenceOwner": "saas-app",
+    "notes": [
+      "The runtime remains stateless and emits lifecycle events and checkpoints.",
+      "The SaaS app owns durable persistence, retries, tenancy state, and resume semantics.",
+      "This manifest is a deployment-time configuration artifact, not a workflow definition."
+    ]
+  },
+  "workflow": {
+    "definitionRef": "definitions/outbound-lead-discovery.v1.0.0.yaml",
+    "scenario": "crm-lead-generation",
+    "stepToolMap": [
+      { "stepId": "search_engine_prospecting", "requiredTools": ["web_search"] },
+      { "stepId": "directory_mining", "requiredTools": ["company_directory_search", "maps_search_places"] },
+      { "stepId": "public_data_prospecting", "requiredTools": ["public_records_search"] },
+      { "stepId": "marketplace_prospecting", "requiredTools": ["web_search"] },
+      { "stepId": "website_technology_discovery", "requiredTools": ["website_content_research", "detect_technologies"] },
+      { "stepId": "geographic_territory_prospecting", "requiredTools": ["maps_search_places"] },
+      { "stepId": "competitive_intelligence_prospecting", "requiredTools": ["web_news_search"] },
+      { "stepId": "event_community_prospecting", "requiredTools": ["events_search"] },
+      { "stepId": "intent_trigger_based_prospecting", "requiredTools": ["signal_monitoring"] },
+      { "stepId": "lead_enrichment_qualification", "requiredTools": ["enrich_company", "enrich_person", "lead_scoring", "crm_create_lead"] }
+    ]
+  },
+  "servers": [
+    {
+      "name": "web-search",
+      "transport": "http",
+      "status": "ready",
+      "tools": [
+        "web_search",
+        "web_news_search"
+      ],
+      "capabilities": [
+        "web-search",
+        "news-search"
+      ],
+      "credentials": [
+        "MT_PROVIDER_SERP_URL",
+        "MT_PROVIDER_SERP_KEY"
+      ],
+      "credentialRef": "secret://tenants/${tenantId}/web-search/serpapi",
+      "notes": [
+        "The SaaS app resolves MT_PROVIDER_SERP_URL and MT_PROVIDER_SERP_KEY from a secure tenant secret store or process environment before invoking the tool."
+      ]
+    },
+    {
+      "name": "maps",
+      "transport": "http",
+      "status": "ready",
+      "tools": [
+        "maps_search_places",
+        "maps_nearby_search"
+      ],
+      "capabilities": [
+        "maps-search",
+        "geo-search"
+      ],
+      "credentials": [
+        "MT_PROVIDER_OSM_URL"
+      ],
+      "credentialRef": "secret://tenants/${tenantId}/maps/openstreetmap",
+      "notes": [
+        "OpenStreetMap/Nominatim is generally no-key public lookup; the host still supplies the provider base URL and any per-tenant rate-limit or proxy configuration."
+      ]
+    },
+    {
+      "name": "business-directories",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@mcp-toolkit/server-business-directories"],
+      "status": "planned",
+      "tools": [
+        "company_directory_search"
+      ],
+      "capabilities": [
+        "business-directory",
+        "company-discovery"
+      ]
+    },
+    {
+      "name": "public-data",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@mcp-toolkit/server-public-data"],
+      "status": "planned",
+      "tools": [
+        "public_records_search"
+      ],
+      "capabilities": [
+        "public-record-search",
+        "business-registry"
+      ]
+    },
+    {
+      "name": "website-research",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@mcp-toolkit/server-website-research"],
+      "status": "planned",
+      "tools": [
+        "website_content_research",
+        "website_technology_scan"
+      ],
+      "capabilities": [
+        "website-analysis",
+        "content-scrape",
+        "technology-detection"
+      ]
+    },
+    {
+      "name": "technology-detection",
+      "transport": "http",
+      "status": "ready",
+      "tools": [
+        "detect_technologies"
+      ],
+      "capabilities": [
+        "technology-detection"
+      ],
+      "credentials": [
+        "MT_PROVIDER_BUILTWITH_URL",
+        "MT_PROVIDER_BUILTWITH_KEY"
+      ],
+      "credentialRef": "secret://tenants/${tenantId}/technology-detection/builtwith",
+      "notes": [
+        "BuiltWith requires a provider key and often a provider URL or endpoint configuration; the host provides both through the SaaS secret layer."
+      ]
+    },
+    {
+      "name": "events",
+      "transport": "http",
+      "status": "planned",
+      "tools": [
+        "events_search",
+        "signal_monitoring"
+      ],
+      "capabilities": [
+        "event-discovery",
+        "trigger-monitoring"
+      ],
+      "credentials": [
+        "MT_PROVIDER_EVENTS_URL"
+      ],
+      "credentialRef": "secret://tenants/${tenantId}/events/adapter"
+    },
+    {
+      "name": "enrichment",
+      "transport": "http",
+      "status": "ready",
+      "tools": [
+        "enrich_company",
+        "enrich_person"
+      ],
+      "capabilities": [
+        "company-enrichment",
+        "person-enrichment"
+      ],
+      "credentials": [
+        "MT_PROVIDER_APOLLO_URL",
+        "MT_PROVIDER_APOLLO_KEY"
+      ],
+      "credentialRef": "secret://tenants/${tenantId}/enrichment/apollo",
+      "notes": [
+        "The runtime resolves the provider secret and URL for the active tenant, then sends a provider-specific request to the enrichment server."
+      ]
+    },
+    {
+      "name": "company-intelligence",
+      "transport": "http",
+      "status": "ready",
+      "tools": [
+        "lead_scoring"
+      ],
+      "capabilities": [
+        "lead-scoring",
+        "prioritization"
+      ],
+      "credentials": [],
+      "credentialRef": "none",
+      "notes": [
+        "Local lead scoring does not need a provider secret; it uses deterministic in-process weights and is fully stateless."
+      ]
+    },
+    {
+      "name": "crm",
+      "transport": "http",
+      "status": "ready",
+      "tools": [
+        "crm_create_lead",
+        "crm_update_lead",
+        "crm_add_activity"
+      ],
+      "capabilities": [
+        "lead-write",
+        "contact-write",
+        "activity-write"
+      ],
+      "credentials": [
+        "MT_CUSTOM_CRM_API_URL",
+        "MT_CUSTOM_CRM_API_KEY",
+        "MT_CUSTOM_CRM_TENANT_ID"
+      ],
+      "credentialRef": "secret://tenants/${tenantId}/crm/custom-api",
+      "notes": [
+        "The SaaS app owns the CRM API secret and tenant configuration; the runtime only passes the tenant_id and tool payload."
+      ]
+    }
+  ],
+  "minimalScenarioSet": {
+    "summary": "The minimum viable tool set for this flow is web search, maps, enrichment, technology detection, event discovery, lead scoring, and CRM writeback. The remaining directories/public-data sources are optional but recommended for the broader outbound lead-discovery workflow.",
+    "required": [
+      "web_search",
+      "maps_search_places",
+      "website_content_research",
+      "detect_technologies",
+      "enrich_company",
+      "enrich_person",
+      "lead_scoring",
+      "crm_create_lead"
+    ],
+    "recommended": [
+      "company_directory_search",
+      "public_records_search",
+      "events_search",
+      "signal_monitoring",
+      "web_news_search"
+    ]
+  }
+}

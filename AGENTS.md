@@ -48,6 +48,8 @@ The agent definition is reusable across runtimes and applications. It should des
 - Keep the schema authoritative; TypeScript typings are convenience-only.
 - Keep this repo stateless: no execution checkpoints, no run history, no tenant/job persistence, no runtime queue state, and no app-level billing or auditing data.
 - Store all live operational state in the SaaS app / worker layer, not in the definition repository.
+- Treat the sample manifest as an app deployment guide, not as runtime state or a database.
+- If a tool requires provider credentials, the definition repo must declare them in the sample manifest using a `credentials` array and the corresponding `credentialRef` pointer pattern.
 
 ---
 
@@ -71,6 +73,8 @@ The app layer owns durable state for:
 - [ ] Document the runtime contract for checkpoint and resume semantics.
 - [ ] Do not add persistence, queueing, or tenant state to this repo unless a concrete host-level requirement demands it.
 - [ ] Keep the schema as the source of truth; generated types are convenience-only.
+- [ ] Keep sample manifests aligned with the current `requiredEnvironment` declarations in the MCP server implementations.
+- [ ] Ensure every tool in the manifest lists its required environment variables in the sample manifest and its matching server implementation.
 
 ---
 

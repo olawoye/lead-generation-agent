@@ -87,6 +87,44 @@ npx ts-node examples/typescript-runtime-stub.ts
 
 ---
 
+## Sample SaaS manifest
+
+The repository includes a sample runtime manifest at [definitions/outbound-lead-discovery.manifest.json](definitions/outbound-lead-discovery.manifest.json). This is not the workflow definition itself; it is a deployment-time wiring file for a host SaaS app.
+
+Use it as a template for the app layer to map the declarative workflow to actual MCP servers and runtime endpoints.
+
+### How the SaaS app should use it
+
+1. Load the workflow YAML definition from [definitions/outbound-lead-discovery.v1.0.0.yaml](definitions/outbound-lead-discovery.v1.0.0.yaml).
+2. Resolve tool names from the canonical registry in [../mcp-toolkit/registry/tools.json](../mcp-toolkit/registry/tools.json).
+3. Replace the example endpoints and commands with the app's real environment values.
+4. Register the manifest with the host runtime so that the execution engine can resolve tool calls to the correct servers.
+5. Keep persistence, job state, retries, cancellation, and auditing in the SaaS app layer rather than in this repo.
+
+### Example flow
+
+```json
+{
+  "servers": [
+    {
+      "name": "web-search",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@mcp-toolkit/server-web-search"]
+    },
+    {
+      "name": "enrichment",
+      "transport": "http",
+      "url": "https://svc.example.com/mcp/enrichment"
+    }
+  ]
+}
+```
+
+This manifest is the app-side contract that tells the runtime which capability servers exist, how to reach them, and which tools they provide.
+
+---
+
 ## Definition format
 
 Every agent definition is a YAML (or JSON) document with the core top-level sections below:
