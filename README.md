@@ -101,6 +101,17 @@ Use it as a template for the app layer to map the declarative workflow to actual
 4. Register the manifest with the host runtime so that the execution engine can resolve tool calls to the correct servers.
 5. Keep persistence, job state, retries, cancellation, and auditing in the SaaS app layer rather than in this repo.
 
+## Dependency on the MCP Toolkit
+
+This repository is intentionally declarative and runtime-neutral. The workflow definition does not implement tool behavior directly. Instead, it declares the tool IDs and capability tags that must be resolved against the canonical toolkit registry in [../mcp-toolkit/registry/tools.json](../mcp-toolkit/registry/tools.json).
+
+The host runtime and SaaS app are expected to:
+- read the toolkit registry as the source of truth for tool names and server capabilities
+- match workflow tool IDs to registry entries before execution
+- keep tool implementations and durable operational state outside this repo
+
+If a tool name or capability tag drifts from the toolkit registry, CI tests should fail before deployment.
+
 ### Example flow
 
 ```json

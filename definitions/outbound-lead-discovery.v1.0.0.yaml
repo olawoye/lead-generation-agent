@@ -184,6 +184,13 @@ spec:
         - business-directory
       optional: false
 
+    - id: person_directory_search
+      description: "Query professional and people directories for founders, executives, and decision-makers."
+      capabilities:
+        - person_directory_search
+        - people-discovery
+      optional: false
+
     - id: public_records_search
       description: "Search public registries, business registers, and open data sources for company signals."
       capabilities:
@@ -415,7 +422,7 @@ spec:
         - public_data_prospecting
         - marketplace_prospecting
       tools:
-        - website_content_research
+        - website_research
         - detect_technologies
       inputs:
         - prospect_records

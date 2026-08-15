@@ -220,3 +220,44 @@ describe("validateToolReferences()", () => {
     expect(errors[0]).toMatch(/ghost-tool/);
   });
 });
+
+// ── Cross-repo toolkit contract ─────────────────────────────────────────────
+
+describe("MCP toolkit contract", () => {
+  it("should only reference toolkit tool IDs that exist in the canonical registry", () => {
+    const toolkitCatalogPath = path.resolve(__dirname, "../../mcp-toolkit/registry/tools.json");
+    const toolkitCatalog = JSON.parse(fs.readFileSync(toolkitCatalogPath, "utf8")) as {
+      tools?: Array<{ name: string; capabilities?: string[] }>;
+    };
+
+    const registryNames = new Set((toolkitCatalog.tools ?? []).map((tool) => tool.name));
+    const definition = loadDefinition(DEFINITION_PATH).definition;
+    const drift = (definition.spec.tools ?? [])
+      .map((tool) => tool.id)
+      .filter((toolId) => !registryNames.has(toolId));
+
+    expect(drift).toEqual([]);
+  });
+
+  it("should keep capabilities aligned with the canonical toolkit capability catalog", () => {
+    const toolkitCatalogPath = path.resolve(__dirname, "../../mcp-toolkit/registry/tools.json");
+    const toolkitCatalog = JSON.parse(fs.readFileSync(toolkitCatalogPath, "utf8")) as {
+      tools?: Array<{ name: string; capabilities?: string[] }>;
+    };
+
+    const registryByName = new Map((toolkitCatalog.tools ?? []).map((tool) => [tool.name, tool]));
+    const definition = loadDefinition(DEFINITION_PATH).definition;
+
+    const unknownCapabilities = (definition.spec.tools ?? []).flatMap((tool) => {
+      const entry = registryByName.get(tool.id);
+      const knownTags = new Set<string>([
+        ...(entry?.capabilities ?? []),
+        tool.id,
+      ]);
+
+      return (tool.capabilities ?? []).filter((capability) => !knownTags.has(capability));
+    });
+
+    expect(unknownCapabilities).toEqual([]);
+  });
+});
