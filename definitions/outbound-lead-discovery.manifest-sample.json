@@ -74,6 +74,21 @@
       "name": "maps",
       "transport": "http",
       "status": "ready",
+      "url": "${saas.generated.url}",
+      "startup": {
+        "mode": "spawn",
+        "command": "node",
+        "args": ["dist/index.js"],
+        "env": {
+          "MCP_HOST": "${saas.generated.host}",
+          "MCP_PORT": "${saas.generated.port}"
+        },
+        "healthCheck": {
+          "path": "/health",
+          "method": "GET",
+          "expectedStatus": 200
+        }
+      },
       "tools": [
         "maps_search_places",
         "maps_nearby_search"
@@ -87,7 +102,7 @@
       ],
       "credentialRef": "secret://tenants/${tenantId}/maps/openstreetmap",
       "notes": [
-        "OpenStreetMap/Nominatim is generally no-key public lookup; the host still supplies the provider base URL and any per-tenant rate-limit or proxy configuration."
+        "The SaaS app generates the bind host and bind port at runtime for each server instance. It injects those values via MCP_HOST and MCP_PORT, then records the final reachable URL. Provider configuration remains in the credential model unless a launch-specific override is intentionally required."
       ]
     },
     {
@@ -138,6 +153,21 @@
       "name": "technology-detection",
       "transport": "http",
       "status": "ready",
+      "url": "${saas.generated.url}",
+      "startup": {
+        "mode": "spawn",
+        "command": "node",
+        "args": ["dist/index.js"],
+        "env": {
+          "MCP_HOST": "${saas.generated.host}",
+          "MCP_PORT": "${saas.generated.port}"
+        },
+        "healthCheck": {
+          "path": "/health",
+          "method": "GET",
+          "expectedStatus": 200
+        }
+      },
       "tools": [
         "detect_technologies"
       ],
@@ -150,7 +180,7 @@
       ],
       "credentialRef": "secret://tenants/${tenantId}/technology-detection/builtwith",
       "notes": [
-        "BuiltWith requires a provider key and often a provider URL or endpoint configuration; the host provides both through the SaaS secret layer."
+        "The SaaS app generates a bind host and port at runtime, then resolves the final URL from those values. The BuiltWith provider URL and key remain in the credential model and are consumed by the server, not passed via startup.env by default."
       ]
     },
     {
@@ -174,6 +204,21 @@
       "name": "enrichment",
       "transport": "http",
       "status": "ready",
+      "url": "${saas.generated.url}",
+      "startup": {
+        "mode": "spawn",
+        "command": "node",
+        "args": ["dist/index.js"],
+        "env": {
+          "MCP_HOST": "${saas.generated.host}",
+          "MCP_PORT": "${saas.generated.port}"
+        },
+        "healthCheck": {
+          "path": "/health",
+          "method": "GET",
+          "expectedStatus": 200
+        }
+      },
       "tools": [
         "enrich_company",
         "enrich_person"
@@ -188,7 +233,7 @@
       ],
       "credentialRef": "secret://tenants/${tenantId}/enrichment/apollo",
       "notes": [
-        "The runtime resolves the provider secret and URL for the active tenant, then sends a provider-specific request to the enrichment server."
+        "The SaaS app allocates the bind host and port at runtime, starts the server with those values, and records the final URL. Provider config remains in the credential model and is resolved by the server itself."
       ]
     },
     {
