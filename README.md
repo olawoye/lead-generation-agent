@@ -134,6 +134,8 @@ If a tool name or capability tag drifts from the toolkit registry, CI tests shou
 
 This manifest is the app-side contract that tells the runtime which capability servers exist, how to reach them, and which tools they provide.
 
+For HTTP-based servers that are started on demand by the SaaS host, the host should allocate an ephemeral bind host/port at runtime and pass them into the spawned process via environment variables such as `MCP_HOST` and `MCP_PORT`. The final reachable URL is then resolved as `http://${MCP_HOST}:${MCP_PORT}` and recorded back into the runtime manifest or connection metadata. This avoids hard-coding a fixed URL or port in a shared manifest.
+
 ---
 
 ## Definition format

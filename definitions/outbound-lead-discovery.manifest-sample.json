@@ -38,6 +38,21 @@
       "name": "web-search",
       "transport": "http",
       "status": "ready",
+      "url": "${saas.generated.url}",
+      "startup": {
+        "mode": "spawn",
+        "command": "node",
+        "args": ["dist/index.js"],
+        "env": {
+          "MCP_HOST": "${saas.generated.host}",
+          "MCP_PORT": "${saas.generated.port}"
+        },
+        "healthCheck": {
+          "path": "/health",
+          "method": "GET",
+          "expectedStatus": 200
+        }
+      },
       "tools": [
         "web_search",
         "web_news_search"
@@ -52,7 +67,7 @@
       ],
       "credentialRef": "secret://tenants/${tenantId}/web-search/serpapi",
       "notes": [
-        "The SaaS app resolves MT_PROVIDER_SERP_URL and MT_PROVIDER_SERP_KEY from a secure tenant secret store or process environment before invoking the tool."
+        "The SaaS app generates the bind host and bind port at runtime for each server instance. It injects those values into the spawned process via MCP_HOST and MCP_PORT, then records the final reachable URL for the server entry. Provider secrets remain in the credential model and are resolved by the server itself from the environment or tenant secret layer; they are not injected through startup.env unless they are runtime-specific overrides."
       ]
     },
     {
