@@ -30,7 +30,7 @@
       { "stepId": "competitive_intelligence_prospecting", "requiredTools": ["web_news_search"] },
       { "stepId": "event_community_prospecting", "requiredTools": ["events_search"] },
       { "stepId": "intent_trigger_based_prospecting", "requiredTools": ["signal_monitoring"] },
-      { "stepId": "lead_enrichment_qualification", "requiredTools": ["enrich_company", "enrich_person", "lead_scoring", "crm_create_lead"] }
+      { "stepId": "lead_enrichment_qualification", "requiredTools": ["enrich_company", "enrich_person", "lead_scoring", "crm_upsert_lead"] }
     ]
   },
   "servers": [
@@ -198,9 +198,7 @@
       "transport": "http",
       "status": "ready",
       "tools": [
-        "crm_create_lead",
-        "crm_update_lead",
-        "crm_add_activity"
+        "crm_upsert_lead"
       ],
       "capabilities": [
         "lead-write",
@@ -210,11 +208,11 @@
       "credentials": [
         "MT_CUSTOM_CRM_API_URL",
         "MT_CUSTOM_CRM_API_KEY",
-        "MT_CUSTOM_CRM_TENANT_ID"
+        "MT_CUSTOM_CRM_TENANT_ID",
+        "MT_CUSTOM_CRM_AGENT_KEY"
       ],
-      "credentialRef": "secret://tenants/${tenantId}/crm/custom-api",
       "notes": [
-        "The SaaS app owns the CRM API secret and tenant configuration; the runtime only passes the tenant_id and tool payload."
+        "The SaaS app provides the CRM base URL, API key, tenant ID, and agent key before invoking the upsert endpoint. The tool sends the payload directly to the configured full endpoint path."
       ]
     }
   ],
@@ -228,7 +226,7 @@
       "enrich_company",
       "enrich_person",
       "lead_scoring",
-      "crm_create_lead"
+      "crm_upsert_lead"
     ],
     "recommended": [
       "company_directory_search",
