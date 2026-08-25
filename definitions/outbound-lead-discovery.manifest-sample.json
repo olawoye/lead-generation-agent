@@ -186,7 +186,22 @@
     {
       "name": "events",
       "transport": "http",
-      "status": "planned",
+      "status": "ready",
+      "url": "${saas.generated.url}",
+      "startup": {
+        "mode": "spawn",
+        "command": "node",
+        "args": ["dist/index.js"],
+        "env": {
+          "MCP_HOST": "${saas.generated.host}",
+          "MCP_PORT": "${saas.generated.port}"
+        },
+        "healthCheck": {
+          "path": "/health",
+          "method": "GET",
+          "expectedStatus": 200
+        }
+      },
       "tools": [
         "events_search",
         "signal_monitoring"
@@ -196,9 +211,13 @@
         "trigger-monitoring"
       ],
       "credentials": [
-        "MT_PROVIDER_EVENTS_URL"
+        "MT_PROVIDER_EVENTBRITE_URL",
+        "MT_PROVIDER_EVENTBRITE_KEY"
       ],
-      "credentialRef": "secret://tenants/${tenantId}/events/adapter"
+      "credentialRef": "secret://tenants/${tenantId}/events/eventbrite",
+      "notes": [
+        "Eventbrite is used as the concrete provider for event lookup and signal monitoring. The SaaS app allocates the bind host and port at runtime, while Eventbrite credentials remain in the credential model and are resolved by the server process itself."
+      ]
     },
     {
       "name": "enrichment",
@@ -240,6 +259,21 @@
       "name": "company-intelligence",
       "transport": "http",
       "status": "ready",
+      "url": "${saas.generated.url}",
+      "startup": {
+        "mode": "spawn",
+        "command": "node",
+        "args": ["dist/index.js"],
+        "env": {
+          "MCP_HOST": "${saas.generated.host}",
+          "MCP_PORT": "${saas.generated.port}"
+        },
+        "healthCheck": {
+          "path": "/health",
+          "method": "GET",
+          "expectedStatus": 200
+        }
+      },
       "tools": [
         "lead_scoring"
       ],
@@ -250,13 +284,28 @@
       "credentials": [],
       "credentialRef": "none",
       "notes": [
-        "Local lead scoring does not need a provider secret; it uses deterministic in-process weights and is fully stateless."
+        "Local lead scoring does not need a provider secret; it uses deterministic in-process weights and is fully stateless. The SaaS app starts it on a dynamic host/port and records the URL returned by that instance."
       ]
     },
     {
       "name": "crm",
       "transport": "http",
       "status": "ready",
+      "url": "${saas.generated.url}",
+      "startup": {
+        "mode": "spawn",
+        "command": "node",
+        "args": ["dist/index.js"],
+        "env": {
+          "MCP_HOST": "${saas.generated.host}",
+          "MCP_PORT": "${saas.generated.port}"
+        },
+        "healthCheck": {
+          "path": "/health",
+          "method": "GET",
+          "expectedStatus": 200
+        }
+      },
       "tools": [
         "crm_upsert_lead"
       ],
@@ -272,7 +321,7 @@
         "MT_CUSTOM_CRM_AGENT_KEY"
       ],
       "notes": [
-        "The SaaS app provides the CRM base URL, API key, tenant ID, and agent key before invoking the upsert endpoint. The tool sends the payload directly to the configured full endpoint path."
+        "The SaaS app provides the CRM base URL, API key, tenant ID, and agent key before invoking the upsert endpoint. The tool sends the payload directly to the configured full endpoint path, while the bind host/port for the local CRM MCP server is allocated at runtime by the SaaS app."
       ]
     }
   ],
