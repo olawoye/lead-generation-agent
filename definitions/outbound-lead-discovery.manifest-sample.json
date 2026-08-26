@@ -107,38 +107,91 @@
     },
     {
       "name": "business-directories",
-      "transport": "stdio",
-      "command": "npx",
-      "args": ["-y", "@mcp-toolkit/server-business-directories"],
-      "status": "planned",
+      "transport": "http",
+      "status": "ready",
+      "url": "${saas.generated.url}",
+      "startup": {
+        "mode": "spawn",
+        "command": "node",
+        "args": ["dist/index.js"],
+        "env": {
+          "MCP_HOST": "${saas.generated.host}",
+          "MCP_PORT": "${saas.generated.port}"
+        },
+        "healthCheck": {
+          "path": "/health",
+          "method": "GET",
+          "expectedStatus": 200
+        }
+      },
       "tools": [
-        "company_directory_search"
+        "company_directory_search",
+        "person_directory_search",
+        "business_listing_lookup"
       ],
       "capabilities": [
         "business-directory",
-        "company-discovery"
+        "company-discovery",
+        "person-directory"
+      ],
+      "credentials": [],
+      "credentialRef": "none",
+      "notes": [
+        "This package is a local directory-source catalog and remains stateless. It exposes a runnable HTTP entrypoint with the same runtime contract as the other toolkit servers, while keeping directory credentials and provider values out of the startup.env contract."
       ]
     },
     {
       "name": "public-data",
-      "transport": "stdio",
-      "command": "npx",
-      "args": ["-y", "@mcp-toolkit/server-public-data"],
-      "status": "planned",
+      "transport": "http",
+      "status": "ready",
+      "url": "${saas.generated.url}",
+      "startup": {
+        "mode": "spawn",
+        "command": "node",
+        "args": ["dist/index.js"],
+        "env": {
+          "MCP_HOST": "${saas.generated.host}",
+          "MCP_PORT": "${saas.generated.port}"
+        },
+        "healthCheck": {
+          "path": "/health",
+          "method": "GET",
+          "expectedStatus": 200
+        }
+      },
       "tools": [
-        "public_records_search"
+        "public_records_search",
+        "registry_lookup"
       ],
       "capabilities": [
         "public-record-search",
         "business-registry"
+      ],
+      "credentials": [],
+      "credentialRef": "none",
+      "notes": [
+        "This server remains a local public-data catalog until a real registry provider is attached. It is still executable with the toolkit's standard runtime contract and does not require runtime-only secrets in startup.env."
       ]
     },
     {
       "name": "website-research",
-      "transport": "stdio",
-      "command": "npx",
-      "args": ["-y", "@mcp-toolkit/server-website-research"],
-      "status": "planned",
+      "transport": "http",
+      "status": "ready",
+      "url": "${saas.generated.url}",
+      "startup": {
+        "mode": "spawn",
+        "command": "node",
+        "args": ["dist/index.js"],
+        "env": {
+          "MCP_HOST": "${saas.generated.host}",
+          "MCP_PORT": "${saas.generated.port}"
+        },
+        "healthCheck": {
+          "path": "/health",
+          "method": "GET",
+          "expectedStatus": 200
+        }
+      },
       "tools": [
         "website_content_research",
         "website_technology_scan"
@@ -147,6 +200,11 @@
         "website-analysis",
         "content-scrape",
         "technology-detection"
+      ],
+      "credentials": [],
+      "credentialRef": "none",
+      "notes": [
+        "This package is executable and follows the same direct-run HTTP contract as the other active servers; it is still a local analysis catalog and does not require startup.env provider values."
       ]
     },
     {
