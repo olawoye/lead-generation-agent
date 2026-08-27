@@ -21,16 +21,16 @@
     "definitionRef": "definitions/outbound-lead-discovery.v1.0.0.yaml",
     "scenario": "crm-lead-generation",
     "stepToolMap": [
-      { "stepId": "search_engine_prospecting", "requiredTools": ["web_search"] },
-      { "stepId": "directory_mining", "requiredTools": ["company_directory_search", "maps_search_places"] },
-      { "stepId": "public_data_prospecting", "requiredTools": ["public_records_search"] },
-      { "stepId": "marketplace_prospecting", "requiredTools": ["web_search"] },
-      { "stepId": "website_technology_discovery", "requiredTools": ["website_content_research", "detect_technologies"] },
-      { "stepId": "geographic_territory_prospecting", "requiredTools": ["maps_search_places"] },
-      { "stepId": "competitive_intelligence_prospecting", "requiredTools": ["web_news_search"] },
-      { "stepId": "event_community_prospecting", "requiredTools": ["events_search"] },
-      { "stepId": "intent_trigger_based_prospecting", "requiredTools": ["signal_monitoring"] },
-      { "stepId": "lead_enrichment_qualification", "requiredTools": ["enrich_company", "enrich_person", "lead_scoring", "crm_upsert_lead"] }
+      { "stepId": "search_engine_prospecting", "requiredTools": ["web_search"], "inputHints": ["keywords", "industry", "location", "excludeJobBoards"] },
+      { "stepId": "directory_mining", "requiredTools": ["company_directory_search", "maps_search_places"], "inputHints": ["companyName", "location", "industry"] },
+      { "stepId": "public_data_prospecting", "requiredTools": ["public_records_search"], "inputHints": ["companyName", "domain", "location"] },
+      { "stepId": "marketplace_prospecting", "requiredTools": ["web_search"], "inputHints": ["keywords", "industry", "location"] },
+      { "stepId": "website_technology_discovery", "requiredTools": ["website_content_research", "detect_technologies"], "inputHints": ["domain", "url", "companyName"] },
+      { "stepId": "geographic_territory_prospecting", "requiredTools": ["maps_search_places"], "inputHints": ["companyName", "location", "country"] },
+      { "stepId": "competitive_intelligence_prospecting", "requiredTools": ["web_news_search"], "inputHints": ["companyName", "domain", "industry"] },
+      { "stepId": "event_community_prospecting", "requiredTools": ["events_search"], "inputHints": ["companyName", "location", "industry"] },
+      { "stepId": "intent_trigger_based_prospecting", "requiredTools": ["signal_monitoring"], "inputHints": ["companyName", "domain", "signals"] },
+      { "stepId": "lead_enrichment_qualification", "requiredTools": ["enrich_company", "enrich_person", "lead_scoring", "crm_upsert_lead"], "inputHints": ["companyName", "domain", "fullName", "title"], "outputHints": ["qualifiedLeads"] }
     ]
   },
   "servers": [
@@ -384,7 +384,7 @@
     }
   ],
   "minimalScenarioSet": {
-    "summary": "The minimum viable tool set for this flow is web search, maps, enrichment, technology detection, event discovery, lead scoring, and CRM writeback. The remaining directories/public-data sources are optional but recommended for the broader outbound lead-discovery workflow.",
+    "summary": "The minimum viable tool set for this flow is web search, maps, enrichment, technology detection, event discovery, lead scoring, and CRM writeback. The remaining directories/public-data sources are optional but recommended for the broader outbound lead-discovery workflow. The runtime should prefer narrowed step-specific candidate inputs and only trigger paid enrichment for candidates that already have a company name or domain.",
     "required": [
       "web_search",
       "maps_search_places",

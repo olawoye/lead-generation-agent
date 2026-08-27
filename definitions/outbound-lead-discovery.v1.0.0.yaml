@@ -91,6 +91,34 @@ spec:
           type: number
           description: "Final lead qualification score from 0 to 100."
           required: true
+    finalLeadOutput:
+      type: object
+      description: "Final aggregated output contract for the end-of-flow CRM-ready lead list."
+      properties:
+        qualified_leads:
+          type: array
+          description: "A cumulative list of normalized leads discovered across free and paid stages."
+          items:
+            type: object
+            properties:
+              full_name:
+                type: string
+              company_name:
+                type: string
+              title:
+                type: string
+              email:
+                type: string
+              website_url:
+                type: string
+              source:
+                type: string
+              confidence:
+                type: number
+              qualification_score:
+                type: number
+              provenance:
+                type: array
 
   options:
     required:
@@ -282,6 +310,11 @@ spec:
         countries: []
         languages:
           - en
+      inputHints:
+        - keywords
+        - industry
+        - location
+        - excludeJobBoards
       outputs:
         - prospect_records
       next_steps:
@@ -318,6 +351,10 @@ spec:
       configuration:
         providers: []
         max_results: 300
+      inputHints:
+        - companyName
+        - location
+        - industry
       outputs:
         - directory_records
       next_steps:
@@ -433,6 +470,10 @@ spec:
         max_pages: 5
         detect_ctas: true
         min_technology_signal_score: 0.4
+      inputHints:
+        - domain
+        - url
+        - companyName
       outputs:
         - website_signals
         - technology_signals
@@ -637,6 +678,13 @@ spec:
           - domain
           - email
           - company_name
+      inputHints:
+        - companyName
+        - domain
+        - fullName
+        - title
+      outputHints:
+        - qualifiedLeads
       outputs:
         - qualified_leads
       next_steps: []
