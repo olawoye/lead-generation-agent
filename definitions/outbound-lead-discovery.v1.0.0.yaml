@@ -315,6 +315,30 @@ spec:
         - industry
         - location
         - excludeJobBoards
+      queryStrategy: "local-service-intent"
+      queryTemplates:
+        - '"${industry}" "${city}" "${service}" -job -salary -resume -cv'
+        - '"${industry}" in ${city} business directory -job -salary'
+        - '"${industry}" ${city} companies near me -job -salary'
+      negativeTerms:
+        - job
+        - salary
+        - resume
+        - cv
+        - careers
+      entityFocus: company
+      extractionContract:
+        target: company
+        fields:
+          - company_name
+          - domain
+          - website_url
+          - location
+          - industry
+        mode: llm
+        requiredFields:
+          - company_name
+        outputKey: candidate_companies
       outputs:
         - prospect_records
       next_steps:
@@ -355,6 +379,28 @@ spec:
         - companyName
         - location
         - industry
+      queryStrategy: "directory-entity-confirmation"
+      queryTemplates:
+        - '"${company_name}" "${city}" business directory'
+        - '"${industry}" "${city}" companies'
+      negativeTerms:
+        - job
+        - vacancy
+        - career
+      entityFocus: company
+      extractionContract:
+        target: company
+        fields:
+          - company_name
+          - domain
+          - website_url
+          - city
+          - state
+          - country
+        mode: llm
+        requiredFields:
+          - company_name
+        outputKey: candidate_companies
       outputs:
         - directory_records
       next_steps:
@@ -392,6 +438,27 @@ spec:
       configuration:
         include_registries: true
         max_results: 250
+      queryStrategy: "registry-validation"
+      queryTemplates:
+        - '"${company_name}" ${city} company registration'
+        - '"${company_name}" legal entity registry ${country}'
+      negativeTerms:
+        - salary
+        - jobs
+        - recruitment
+      entityFocus: company
+      extractionContract:
+        target: company
+        fields:
+          - company_name
+          - domain
+          - registry_id
+          - legal_name
+          - country
+        mode: schema
+        requiredFields:
+          - company_name
+        outputKey: registry_companies
       outputs:
         - public_records
       next_steps:
@@ -428,6 +495,27 @@ spec:
       configuration:
         categories: []
         max_results: 200
+      queryStrategy: "platform-demand-signal"
+      queryTemplates:
+        - '"${industry}" "${city}" service providers'
+        - '"${industry}" "${city}" vendor OR company'
+      negativeTerms:
+        - jobs
+        - salary
+        - resume
+      entityFocus: company
+      extractionContract:
+        target: company
+        fields:
+          - company_name
+          - website_url
+          - domain
+          - city
+          - service_offer
+        mode: llm
+        requiredFields:
+          - company_name
+        outputKey: marketplace_companies
       outputs:
         - marketplace_records
       next_steps:
@@ -474,6 +562,29 @@ spec:
         - domain
         - url
         - companyName
+      queryStrategy: "website-fit-analysis"
+      queryTemplates:
+        - 'site:${domain} "${industry}" "${city}"'
+        - '"${company_name}" services pricing contact'
+      negativeTerms:
+        - jobs
+        - careers
+        - recruiting
+      entityFocus: company
+      extractionContract:
+        target: company
+        fields:
+          - company_name
+          - domain
+          - website_url
+          - service_offerings
+          - cta_type
+          - technology_signals
+        mode: llm
+        requiredFields:
+          - company_name
+          - domain
+        outputKey: website_candidates
       outputs:
         - website_signals
         - technology_signals
@@ -512,6 +623,26 @@ spec:
       configuration:
         radius_km: 50
         include_local_presence: true
+      queryStrategy: "location-fit-check"
+      queryTemplates:
+        - '"${company_name}" "${city}" location'
+        - '"${industry}" near ${city}'
+      negativeTerms:
+        - remote-only
+        - global
+      entityFocus: company
+      extractionContract:
+        target: company
+        fields:
+          - company_name
+          - city
+          - state
+          - country
+          - service_area
+        mode: schema
+        requiredFields:
+          - company_name
+        outputKey: territory_candidates
       outputs:
         - territory_records
       next_steps:
@@ -549,6 +680,27 @@ spec:
       configuration:
         max_results: 200
         categories: []
+      queryStrategy: "adjacent-market-competitor-intent"
+      queryTemplates:
+        - '"${industry}" "${city}" competitors'
+        - '"${company_name}" expansion growth ${city}'
+      negativeTerms:
+        - jobs
+        - hiring
+        - salary
+      entityFocus: company
+      extractionContract:
+        target: company
+        fields:
+          - company_name
+          - domain
+          - website_url
+          - market_signal
+          - location
+        mode: llm
+        requiredFields:
+          - company_name
+        outputKey: competition_candidates
       outputs:
         - competition_records
       next_steps:
@@ -587,6 +739,29 @@ spec:
       configuration:
         event_types: []
         max_results: 150
+      queryStrategy: "event-driven-community-intent"
+      queryTemplates:
+        - '"${industry}" conference ${city}'
+        - '"${industry}" meetup ${city}'
+        - '"${service}" networking ${city}'
+      negativeTerms:
+        - job fair
+        - recruitment
+        - careers
+      entityFocus: event
+      extractionContract:
+        target: event
+        fields:
+          - event_name
+          - event_url
+          - organizer_name
+          - venue_name
+          - city
+          - start_date
+        mode: llm
+        requiredFields:
+          - event_name
+        outputKey: event_candidates
       outputs:
         - event_records
       next_steps:
@@ -628,6 +803,28 @@ spec:
           - launch
           - expansion
         max_results: 200
+      queryStrategy: "trigger-signal-monitoring"
+      queryTemplates:
+        - '"${company_name}" hiring expansion launch ${city}'
+        - '"${industry}" growth funding ${city}'
+      negativeTerms:
+        - jobs
+        - salary
+        - resume
+      entityFocus: signal
+      extractionContract:
+        target: signal
+        fields:
+          - company_name
+          - trigger_type
+          - evidence_url
+          - signal_date
+          - source
+        mode: llm
+        requiredFields:
+          - company_name
+          - trigger_type
+        outputKey: signal_candidates
       outputs:
         - intent_records
       next_steps:
@@ -685,6 +882,27 @@ spec:
         - title
       outputHints:
         - qualifiedLeads
+      queryStrategy: "final-normalization-and-prioritization"
+      queryTemplates: []
+      negativeTerms: []
+      entityFocus: lead
+      extractionContract:
+        target: lead
+        fields:
+          - full_name
+          - title
+          - email
+          - company_name
+          - website_url
+          - domain
+          - confidence
+          - qualification_score
+          - provenance
+        mode: llm
+        requiredFields:
+          - company_name
+          - confidence
+        outputKey: qualified_leads
       outputs:
         - qualified_leads
       next_steps: []

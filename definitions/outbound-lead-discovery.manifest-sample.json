@@ -269,12 +269,12 @@
         "trigger-monitoring"
       ],
       "credentials": [
-        "MT_PROVIDER_EVENTBRITE_URL",
-        "MT_PROVIDER_EVENTBRITE_KEY"
+        "MT_PROVIDER_SERP_URL",
+        "MT_PROVIDER_SERP_KEY"
       ],
-      "credentialRef": "secret://tenants/${tenantId}/events/eventbrite",
+      "credentialRef": "secret://tenants/${tenantId}/events/serpapi",
       "notes": [
-        "Eventbrite is used as the concrete provider for event lookup and signal monitoring. The SaaS app allocates the bind host and port at runtime, while Eventbrite credentials remain in the credential model and are resolved by the server process itself."
+        "Google Events is sourced through SerpAPI. The SaaS app still allocates the local bind host and port at runtime, while the SerpAPI URL and key are resolved by the server from the preferred MT_PROVIDER_SERP_* environment variables or the tenant secret layer."
       ]
     },
     {
