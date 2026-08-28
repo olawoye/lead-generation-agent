@@ -21,14 +21,65 @@
     "definitionRef": "definitions/outbound-lead-discovery.v1.0.0.yaml",
     "scenario": "crm-lead-generation",
     "stepToolMap": [
-      { "stepId": "search_engine_prospecting", "requiredTools": ["web_search"], "inputHints": ["keywords", "industry", "location", "excludeJobBoards"] },
-      { "stepId": "directory_mining", "requiredTools": ["company_directory_search", "maps_search_places"], "inputHints": ["companyName", "location", "industry"] },
+      {
+        "stepId": "search_engine_prospecting",
+        "requiredTools": ["web_search"],
+        "inputHints": ["keywords", "industry", "location", "excludeJobBoards"],
+        "followUp": {
+          "enabled": true,
+          "callMode": "app-driven",
+          "targetEntity": "company",
+          "triggerFields": ["website_url", "domain", "source_url", "listing_url"],
+          "ignoreFields": ["person_profile_url", "linkedin_url", "contact_url"],
+          "tool": "extract_website_data",
+          "inputMapping": {
+            "url": "website_url",
+            "extractionQuery": "Extract company profile details, service offering, location, and contact metadata from the business website. Do not treat this as a personal profile page.",
+            "outputSchema": "company-profile-output"
+          }
+        }
+      },
+      {
+        "stepId": "directory_mining",
+        "requiredTools": ["company_directory_search", "maps_search_places"],
+        "inputHints": ["companyName", "location", "industry"],
+        "followUp": {
+          "enabled": true,
+          "callMode": "app-driven",
+          "targetEntity": "company",
+          "triggerFields": ["website_url", "domain", "listing_url", "source_url"],
+          "ignoreFields": ["person_profile_url", "contact_url"],
+          "tool": "extract_website_data",
+          "inputMapping": {
+            "url": "website_url",
+            "extractionQuery": "Confirm the business profile, service area, and contact details from the company website. Keep only company-level data.",
+            "outputSchema": "company-profile-output"
+          }
+        }
+      },
       { "stepId": "public_data_prospecting", "requiredTools": ["public_records_search"], "inputHints": ["companyName", "domain", "location"] },
       { "stepId": "marketplace_prospecting", "requiredTools": ["web_search"], "inputHints": ["keywords", "industry", "location"] },
       { "stepId": "website_technology_discovery", "requiredTools": ["website_content_research", "detect_technologies"], "inputHints": ["domain", "url", "companyName"] },
       { "stepId": "geographic_territory_prospecting", "requiredTools": ["maps_search_places"], "inputHints": ["companyName", "location", "country"] },
       { "stepId": "competitive_intelligence_prospecting", "requiredTools": ["web_news_search"], "inputHints": ["companyName", "domain", "industry"] },
-      { "stepId": "event_community_prospecting", "requiredTools": ["events_search"], "inputHints": ["companyName", "location", "industry"] },
+      {
+        "stepId": "event_community_prospecting",
+        "requiredTools": ["events_search"],
+        "inputHints": ["companyName", "location", "industry"],
+        "followUp": {
+          "enabled": true,
+          "callMode": "app-driven",
+          "targetEntity": "company",
+          "triggerFields": ["organizer_website_url", "venue_website_url", "event_url"],
+          "ignoreFields": ["person_profile_url", "contact_url"],
+          "tool": "extract_website_data",
+          "inputMapping": {
+            "url": "organizer_website_url",
+            "extractionQuery": "Extract company or organizer profile data from the event-linked website when the event page points to a business or venue website.",
+            "outputSchema": "company-profile-output"
+          }
+        }
+      },
       { "stepId": "intent_trigger_based_prospecting", "requiredTools": ["signal_monitoring"], "inputHints": ["companyName", "domain", "signals"] },
       { "stepId": "lead_enrichment_qualification", "requiredTools": ["enrich_company", "enrich_person", "lead_scoring", "crm_upsert_lead"], "inputHints": ["companyName", "domain", "fullName", "title"], "outputHints": ["qualifiedLeads"] }
     ]
@@ -205,6 +256,38 @@
       "credentialRef": "none",
       "notes": [
         "This package is executable and follows the same direct-run HTTP contract as the other active servers; it is still a local analysis catalog and does not require startup.env provider values."
+      ]
+    },
+    {
+      "name": "website-extraction",
+      "transport": "http",
+      "status": "ready",
+      "url": "${saas.generated.url}",
+      "startup": {
+        "mode": "spawn",
+        "command": "node",
+        "args": ["dist/index.js"],
+        "env": {
+          "MCP_HOST": "${saas.generated.host}",
+          "MCP_PORT": "${saas.generated.port}"
+        },
+        "healthCheck": {
+          "path": "/health",
+          "method": "GET",
+          "expectedStatus": 200
+        }
+      },
+      "tools": [
+        "extract_website_data"
+      ],
+      "capabilities": [
+        "website-extraction",
+        "structured-data-extraction"
+      ],
+      "credentials": [],
+      "credentialRef": "none",
+      "notes": [
+        "This server receives a URL plus an extractionQuery and optional outputSchema, then returns page text and structured extraction instructions for the SaaS app's LLM to parse into lead-ready JSON. It is meant for website-to-structured-data conversion rather than broad, generic content analysis."
       ]
     },
     {

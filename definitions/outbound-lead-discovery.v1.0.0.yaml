@@ -316,6 +316,7 @@ spec:
         - location
         - excludeJobBoards
       queryStrategy: "local-service-intent"
+      extractionQuery: "From the result pages, identify legitimate business websites and extract company name, domain, website URL, location, and industry. Ignore job listings, resumes, and recruitment pages."
       queryTemplates:
         - '"${industry}" "${city}" "${service}" -job -salary -resume -cv'
         - '"${industry}" in ${city} business directory -job -salary'
@@ -380,6 +381,7 @@ spec:
         - location
         - industry
       queryStrategy: "directory-entity-confirmation"
+      extractionQuery: "From the directory listing or company page, confirm the business name, website URL, domain, and location. Keep only company records with a usable website or domain."
       queryTemplates:
         - '"${company_name}" "${city}" business directory'
         - '"${industry}" "${city}" companies'
@@ -548,6 +550,7 @@ spec:
         - marketplace_prospecting
       tools:
         - website_research
+        - extract_website_data
         - detect_technologies
       inputs:
         - prospect_records
@@ -563,6 +566,7 @@ spec:
         - url
         - companyName
       queryStrategy: "website-fit-analysis"
+      extractionQuery: "Inspect the company website and extract the company name, domain, website URL, service offerings, CTA type, and any technology or product signals that indicate fit for a target market. Return only business-relevant metadata."
       queryTemplates:
         - 'site:${domain} "${industry}" "${city}"'
         - '"${company_name}" services pricing contact'
@@ -883,6 +887,7 @@ spec:
       outputHints:
         - qualifiedLeads
       queryStrategy: "final-normalization-and-prioritization"
+      extractionQuery: "Normalize each final lead to company_name, full_name, title, email, phone, website_url, domain, confidence, and qualification_score. If an email is missing, preserve the record and use a deterministic placeholder email only if the CRM writeback layer requires it."
       queryTemplates: []
       negativeTerms: []
       entityFocus: lead
