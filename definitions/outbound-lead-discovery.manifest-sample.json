@@ -346,6 +346,46 @@
       ]
     },
     {
+      "name": "yellow-pages",
+      "transport": "http",
+      "status": "ready",
+      "url": "${saas.generated.url}",
+      "startup": {
+        "mode": "spawn",
+        "command": "node",
+        "args": ["dist/index.js"],
+        "env": {
+          "MCP_HOST": "${saas.generated.host}",
+          "MCP_PORT": "${saas.generated.port}"
+        },
+        "healthCheck": {
+          "path": "/health",
+          "method": "GET",
+          "expectedStatus": 200
+        }
+      },
+      "tools": [
+        "yellow_pages_business_lookup",
+        "yellow_pages_person_lookup"
+      ],
+      "capabilities": [
+        "directory-contact-fallback",
+        "business-contact-lookup",
+        "person-contact-lookup"
+      ],
+      "credentials": [
+        "MT_PROVIDER_HUNTER_KEY",
+        "MT_PROVIDER_LUSHA_KEY",
+        "MT_PROVIDER_UPLEAD_KEY",
+        "MT_PROVIDER_OUTSCRAPER_KEY",
+        "MT_PROVIDER_APIFY_KEY"
+      ],
+      "credentialRef": "secret://tenants/${tenantId}/yellow-pages/{provider}",
+      "notes": [
+        "This is a fallback directory-style contact lookup server. It tries the first configured provider among Hunter, Lusha, UpLead, Outscraper, and Apify, and returns the first provider result that yields usable email or contact data. The app resolves whichever environment keys are available and keeps the transport contract stable."
+      ]
+    },
+    {
       "name": "crm",
       "transport": "http",
       "status": "ready",
