@@ -51,8 +51,8 @@
           "ignoreFields": ["person_profile_url", "contact_url"],
           "tool": "extract_website_data",
           "inputMapping": {
-            "url": "website_url",
-            "extractionQuery": "Confirm the business profile, service area, and contact details from the company website. Keep only company-level data.",
+            "url": "search_url",
+            "extractionQuery": "Process the directory or person search URL and extract the actual business or person lead candidates from the result page. Keep only company-level or person-level data as appropriate.",
             "outputSchema": "company-profile-output"
           }
         }

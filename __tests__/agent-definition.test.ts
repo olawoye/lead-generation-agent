@@ -1,3 +1,7 @@
+/// <reference types="node" />
+/// <reference types="jest" />
+
+import { beforeAll, describe, expect, it } from "@jest/globals";
 import * as path from "path";
 import * as fs from "fs";
 import Ajv from "ajv";
@@ -79,8 +83,16 @@ describe("loadDefinition()", () => {
     expect(result.definition.metadata.version).toBe("1.0.0");
   });
 
-  it("should have exactly 10 steps", () => {
-    expect(result.definition.spec.steps).toHaveLength(10);
+  it("should have exactly 5 core steps", () => {
+    expect(result.definition.spec.steps).toHaveLength(5);
+    const ids = result.definition.spec.steps.map((step) => step.id);
+    expect(ids).toEqual([
+      "search_engine_prospecting",
+      "directory_mining",
+      "website_technology_discovery",
+      "geographic_territory_prospecting",
+      "lead_enrichment_qualification",
+    ]);
   });
 
   it("should have ORAR with all four fields", () => {
@@ -118,9 +130,9 @@ describe("resolveExecutionOrder()", () => {
     definition = loadDefinition(DEFINITION_PATH).definition;
   });
 
-  it("should return 10 resolved steps", () => {
+  it("should return 5 resolved core steps", () => {
     const order = resolveExecutionOrder(definition);
-    expect(order).toHaveLength(10);
+    expect(order).toHaveLength(5);
   });
 
   it("should assign wave 0 to the first discovery step (search_engine_prospecting)", () => {

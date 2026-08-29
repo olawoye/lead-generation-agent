@@ -6,7 +6,7 @@ metadata:
   displayName: "Outbound Lead Discovery Agent"
   version: "1.0.0"
   description: >
-    A declarative 10-step outbound lead-discovery workflow for finding,
+    A declarative 5-step outbound lead-discovery workflow for finding,
     qualifying, enriching, and prioritising businesses or individuals likely to
     need a SaaS product or service in a target geography.
   tags:
@@ -219,20 +219,6 @@ spec:
         - people-discovery
       optional: false
 
-    - id: public_records_search
-      description: "Search public registries, business registers, and open data sources for company signals."
-      capabilities:
-        - public-record-search
-        - business-registry-access
-      optional: false
-
-    - id: marketplace_search
-      description: "Search marketplaces and platform listings for service and business activity."
-      capabilities:
-        - marketplace-discovery
-        - platform-search
-      optional: false
-
     - id: website_research
       description: "Assess company websites, service offerings, product pages, and CTA signals."
       capabilities:
@@ -247,25 +233,11 @@ spec:
         - detect_technologies
       optional: false
 
-    - id: competitive_intelligence_search
-      description: "Search for competitors, market activity, and expansion or service signals."
+    - id: extract_website_data
+      description: "Process a website or search-result URL and extract structured lead-related content."
       capabilities:
-        - market-intelligence
-        - competitive-analysis
-      optional: false
-
-    - id: events_search
-      description: "Search for events, communities, and local business ecosystems relevant to the ICP."
-      capabilities:
-        - event-discovery
-        - community-lookup
-      optional: false
-
-    - id: signal_monitoring
-      description: "Look for trigger-based signals such as hiring, funding, launches, or business expansion."
-      capabilities:
-        - intent-signal-detection
-        - trigger-monitoring
+        - website-extraction
+        - structured-data-extraction
       optional: false
 
     - id: enrich_company
@@ -376,6 +348,10 @@ spec:
       configuration:
         providers: []
         max_results: 300
+        handoff:
+          target_tool: extract_website_data
+          target_field: search_url
+          instruction: "For each directory or person source returned by the business-directories server, compose a search URL from the source's search_url_base and the curated query, then hand each resulting URL to the website extractor for result-page analysis."
       inputHints:
         - companyName
         - location
@@ -406,7 +382,6 @@ spec:
       outputs:
         - directory_records
       next_steps:
-        - public_data_prospecting
         - website_technology_discovery
       quality_rules:
         - id: directory_record_validity
@@ -422,120 +397,6 @@ spec:
           - timeout
           - service_unavailable
 
-    - id: public_data_prospecting
-      name: "Public Data & Open Registers"
-      description: >
-        Check public registers, company registries, and open data sources for legal,
-        operational, and local business indicators.
-      enabled: true
-      objective: "Validate business existence, registration, and local footprint in public data."
-      dependsOn:
-        - directory_mining
-      tools:
-        - public_records_search
-      inputs:
-        - icp
-        - geography
-        - prospect_records
-      configuration:
-        include_registries: true
-        max_results: 250
-      queryStrategy: "registry-validation"
-      queryTemplates:
-        - '"${company_name}" ${city} company registration'
-        - '"${company_name}" legal entity registry ${country}'
-      negativeTerms:
-        - salary
-        - jobs
-        - recruitment
-      entityFocus: company
-      extractionContract:
-        target: company
-        fields:
-          - company_name
-          - domain
-          - registry_id
-          - legal_name
-          - country
-        mode: schema
-        requiredFields:
-          - company_name
-        outputKey: registry_companies
-      outputs:
-        - public_records
-      next_steps:
-        - marketplace_prospecting
-        - website_technology_discovery
-      quality_rules:
-        - id: public_data_coverage
-          rule: "record_has_source_url_or_registry_id"
-          severity: "warning"
-          message: "Public records should include source URL or registry identifier when available."
-      retry_policy:
-        max_attempts: 3
-        backoff_ms: 1200
-        backoff_multiplier: 2
-        max_backoff_ms: 20000
-        retry_on:
-          - timeout
-          - rate_limit
-
-    - id: marketplace_prospecting
-      name: "Marketplace & Platform Prospecting"
-      description: >
-        Search marketplaces and platform listings for relevant businesses, service
-        categories, or vendor activity in the target market.
-      enabled: true
-      objective: "Identify demand-side activity and business presence in relevant platforms."
-      dependsOn:
-        - public_data_prospecting
-      tools:
-        - marketplace_search
-      inputs:
-        - icp
-        - geography
-      configuration:
-        categories: []
-        max_results: 200
-      queryStrategy: "platform-demand-signal"
-      queryTemplates:
-        - '"${industry}" "${city}" service providers'
-        - '"${industry}" "${city}" vendor OR company'
-      negativeTerms:
-        - jobs
-        - salary
-        - resume
-      entityFocus: company
-      extractionContract:
-        target: company
-        fields:
-          - company_name
-          - website_url
-          - domain
-          - city
-          - service_offer
-        mode: llm
-        requiredFields:
-          - company_name
-        outputKey: marketplace_companies
-      outputs:
-        - marketplace_records
-      next_steps:
-        - website_technology_discovery
-        - geographic_territory_prospecting
-      quality_rules:
-        - id: marketplace_signal_required
-          rule: "platform_record_has_name_or_url"
-          severity: "error"
-          message: "Marketplace records must include a recognizable name or URL."
-      retry_policy:
-        max_attempts: 2
-        backoff_ms: 1000
-        backoff_multiplier: 2
-        max_backoff_ms: 10000
-        retry_on:
-          - timeout
-
     - id: website_technology_discovery
       name: "Website & Technology Discovery"
       description: >
@@ -546,8 +407,6 @@ spec:
       dependsOn:
         - search_engine_prospecting
         - directory_mining
-        - public_data_prospecting
-        - marketplace_prospecting
       tools:
         - website_research
         - extract_website_data
@@ -593,7 +452,6 @@ spec:
         - website_signals
         - technology_signals
       next_steps:
-        - competitive_intelligence_prospecting
         - geographic_territory_prospecting
       quality_rules:
         - id: website_signal_validity
@@ -617,7 +475,7 @@ spec:
       enabled: true
       objective: "Confirm the target geography and local service footprint for each prospect."
       dependsOn:
-        - marketplace_prospecting
+        - website_technology_discovery
       tools:
         - maps_search_places
       inputs:
@@ -650,8 +508,7 @@ spec:
       outputs:
         - territory_records
       next_steps:
-        - competitive_intelligence_prospecting
-        - event_community_prospecting
+        - lead_enrichment_qualification
       quality_rules:
         - id: geography_match
           rule: "location_match_required_when_geo_filter_set"
@@ -665,188 +522,6 @@ spec:
         retry_on:
           - timeout
 
-    - id: competitive_intelligence_prospecting
-      name: "Competitive Intelligence Prospecting"
-      description: >
-        Look for market activity, competitor presence, adjacent category signals,
-        and service demand cues that indicate readiness or need.
-      enabled: true
-      objective: "Identify competitive or adjacent signal strength that indicates likely need."
-      dependsOn:
-        - website_technology_discovery
-        - geographic_territory_prospecting
-      tools:
-        - competitive_intelligence_search
-      inputs:
-        - prospect_records
-        - website_signals
-        - technology_signals
-      configuration:
-        max_results: 200
-        categories: []
-      queryStrategy: "adjacent-market-competitor-intent"
-      queryTemplates:
-        - '"${industry}" "${city}" competitors'
-        - '"${company_name}" expansion growth ${city}'
-      negativeTerms:
-        - jobs
-        - hiring
-        - salary
-      entityFocus: company
-      extractionContract:
-        target: company
-        fields:
-          - company_name
-          - domain
-          - website_url
-          - market_signal
-          - location
-        mode: llm
-        requiredFields:
-          - company_name
-        outputKey: competition_candidates
-      outputs:
-        - competition_records
-      next_steps:
-        - event_community_prospecting
-        - intent_trigger_based_prospecting
-      quality_rules:
-        - id: competitive_signal_present
-          rule: "market_signal_or_rival_presence_exists"
-          severity: "warning"
-          message: "A competitive signal increases score but is not required to continue."
-      retry_policy:
-        max_attempts: 2
-        backoff_ms: 1200
-        backoff_multiplier: 2
-        max_backoff_ms: 15000
-        retry_on:
-          - timeout
-          - rate_limit
-
-    - id: event_community_prospecting
-      name: "Event & Community Prospecting"
-      description: >
-        Search events, communities, and local ecosystems to find businesses or
-        founders that may be actively building or scaling.
-      enabled: true
-      objective: "Find signals from communities and events that suggest a business is active or in growth mode."
-      dependsOn:
-        - geographic_territory_prospecting
-        - competitive_intelligence_prospecting
-      tools:
-        - events_search
-      inputs:
-        - icp
-        - geography
-        - prospect_records
-      configuration:
-        event_types: []
-        max_results: 150
-      queryStrategy: "event-driven-community-intent"
-      queryTemplates:
-        - '"${industry}" conference ${city}'
-        - '"${industry}" meetup ${city}'
-        - '"${service}" networking ${city}'
-      negativeTerms:
-        - job fair
-        - recruitment
-        - careers
-      entityFocus: event
-      extractionContract:
-        target: event
-        fields:
-          - event_name
-          - event_url
-          - organizer_name
-          - venue_name
-          - city
-          - start_date
-        mode: llm
-        requiredFields:
-          - event_name
-        outputKey: event_candidates
-      outputs:
-        - event_records
-      next_steps:
-        - intent_trigger_based_prospecting
-        - lead_enrichment_qualification
-      quality_rules:
-        - id: event_signal_relevance
-          rule: "event_record_has_name_or_date"
-          severity: "warning"
-          message: "Event records should contain a name or date where possible."
-      retry_policy:
-        max_attempts: 2
-        backoff_ms: 1000
-        backoff_multiplier: 2
-        max_backoff_ms: 12000
-        retry_on:
-          - timeout
-
-    - id: intent_trigger_based_prospecting
-      name: "Intent & Trigger-Based Prospecting"
-      description: >
-        Detect intent triggers such as hiring, funding, launch activity, growth,
-        or expansion signals that indicate buying readiness.
-      enabled: true
-      objective: "Identify behavioral or market triggers that improve the chance of a relevant conversation."
-      dependsOn:
-        - competitive_intelligence_prospecting
-        - event_community_prospecting
-      tools:
-        - signal_monitoring
-      inputs:
-        - prospect_records
-        - geography
-        - technology_signals
-      configuration:
-        trigger_types:
-          - hiring
-          - funding
-          - launch
-          - expansion
-        max_results: 200
-      queryStrategy: "trigger-signal-monitoring"
-      queryTemplates:
-        - '"${company_name}" hiring expansion launch ${city}'
-        - '"${industry}" growth funding ${city}'
-      negativeTerms:
-        - jobs
-        - salary
-        - resume
-      entityFocus: signal
-      extractionContract:
-        target: signal
-        fields:
-          - company_name
-          - trigger_type
-          - evidence_url
-          - signal_date
-          - source
-        mode: llm
-        requiredFields:
-          - company_name
-          - trigger_type
-        outputKey: signal_candidates
-      outputs:
-        - intent_records
-      next_steps:
-        - lead_enrichment_qualification
-      quality_rules:
-        - id: trigger_signal_present
-          rule: "signal_has_trigger_type_and_evidence"
-          severity: "warning"
-          message: "Intent triggers should contain a clear business trigger and supporting evidence."
-      retry_policy:
-        max_attempts: 3
-        backoff_ms: 1200
-        backoff_multiplier: 2
-        max_backoff_ms: 20000
-        retry_on:
-          - timeout
-          - rate_limit
-
     - id: lead_enrichment_qualification
       name: "Lead Enrichment & Qualification"
       description: >
@@ -855,8 +530,8 @@ spec:
       enabled: true
       objective: "Normalize, enrich, deduplicate, score, and prioritize the final lead dataset."
       dependsOn:
-        - event_community_prospecting
-        - intent_trigger_based_prospecting
+        - website_technology_discovery
+        - geographic_territory_prospecting
       tools:
         - enrich_company
         - enrich_person
@@ -864,14 +539,9 @@ spec:
       inputs:
         - prospect_records
         - directory_records
-        - public_records
-        - marketplace_records
         - website_signals
         - technology_signals
         - territory_records
-        - competition_records
-        - event_records
-        - intent_records
       configuration:
         min_qualification_score: 50
         max_results: 100

@@ -212,6 +212,11 @@
               }
             }
           }
+        },
+        "finalLeadOutput": {
+          "type": "object",
+          "description": "Optional schema for the final aggregated lead output.",
+          "additionalProperties": true
         }
       }
     },
