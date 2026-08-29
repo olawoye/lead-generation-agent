@@ -79,6 +79,9 @@
         "policies": {
           "$ref": "#/definitions/Policies"
         },
+        "guidance": {
+          "$ref": "#/definitions/Guidance"
+        },
         "tools": {
           "type": "array",
           "description": "Tool requirements consumed by steps. Runtime resolves these independently.",
@@ -283,6 +286,17 @@
           "type": "string",
           "enum": ["fail-fast", "continue-on-error", "rollback"],
           "description": "How the runtime handles step-level errors."
+        }
+      }
+    },
+    "Guidance": {
+      "type": "object",
+      "description": "Optional runtime guidance or instructions that should be surfaced to the SaaS application or embedded LLM.",
+      "additionalProperties": true,
+      "properties": {
+        "runtimeInstructions": {
+          "type": "array",
+          "items": { "type": "string" }
         }
       }
     },

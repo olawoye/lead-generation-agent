@@ -83,14 +83,12 @@ describe("loadDefinition()", () => {
     expect(result.definition.metadata.version).toBe("1.0.0");
   });
 
-  it("should have exactly 5 core steps", () => {
-    expect(result.definition.spec.steps).toHaveLength(5);
+  it("should have exactly 3 core steps", () => {
+    expect(result.definition.spec.steps).toHaveLength(3);
     const ids = result.definition.spec.steps.map((step) => step.id);
     expect(ids).toEqual([
       "search_engine_prospecting",
       "directory_mining",
-      "website_technology_discovery",
-      "geographic_territory_prospecting",
       "lead_enrichment_qualification",
     ]);
   });
@@ -130,9 +128,9 @@ describe("resolveExecutionOrder()", () => {
     definition = loadDefinition(DEFINITION_PATH).definition;
   });
 
-  it("should return 5 resolved core steps", () => {
+  it("should return 3 resolved core steps", () => {
     const order = resolveExecutionOrder(definition);
-    expect(order).toHaveLength(5);
+    expect(order).toHaveLength(3);
   });
 
   it("should assign wave 0 to the first discovery step (search_engine_prospecting)", () => {

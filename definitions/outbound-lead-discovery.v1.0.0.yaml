@@ -190,6 +190,14 @@ spec:
       retentionDays: 30
     errorHandling: continue-on-error
 
+  guidance:
+    runtimeInstructions:
+      - "Before selecting discovery sources, first classify the user query's target region and/or country from the brief, geography, and any explicit location hints."
+      - "Use that inferred region/country to choose the most relevant directory and person sources from the catalog rather than using a generic or cross-region source set."
+      - "If the country is ambiguous, prefer the most likely country from the supplied geography and note the uncertainty in the reasoning trace or intermediate output."
+      - "When the query mentions a specific country, state or city, prioritize local or regional directories and people sources that match that geography."
+      - "When the query is global or multi-region, run the discovery plan in a region-aware manner and keep the region/country annotation on each candidate lead."
+
   tools:
     - id: web_search
       description: "Search the public web for candidate companies and people matching the ICP."
@@ -316,7 +324,6 @@ spec:
         - prospect_records
       next_steps:
         - directory_mining
-        - website_technology_discovery
       quality_rules:
         - id: search_result_relevance
           rule: "candidate_has_name_or_domain"
@@ -381,8 +388,7 @@ spec:
         outputKey: candidate_companies
       outputs:
         - directory_records
-      next_steps:
-        - website_technology_discovery
+      next_steps: []
       quality_rules:
         - id: directory_record_validity
           rule: "record_has_business_name_or_url"
@@ -397,131 +403,6 @@ spec:
           - timeout
           - service_unavailable
 
-    - id: website_technology_discovery
-      name: "Website & Technology Discovery"
-      description: >
-        Analyze websites and online technology signals to determine product/service
-        relevance and likely buying intent.
-      enabled: true
-      objective: "Assess each opportunity's website, service relevance, and technology footprint."
-      dependsOn:
-        - search_engine_prospecting
-        - directory_mining
-      tools:
-        - website_research
-        - extract_website_data
-        - detect_technologies
-      inputs:
-        - prospect_records
-        - directory_records
-        - public_records
-        - marketplace_records
-      configuration:
-        max_pages: 5
-        detect_ctas: true
-        min_technology_signal_score: 0.4
-      inputHints:
-        - domain
-        - url
-        - companyName
-      queryStrategy: "website-fit-analysis"
-      extractionQuery: "Inspect the company website and extract the company name, domain, website URL, service offerings, CTA type, and any technology or product signals that indicate fit for a target market. Return only business-relevant metadata."
-      queryTemplates:
-        - 'site:${domain} "${industry}" "${city}"'
-        - '"${company_name}" services pricing contact'
-      negativeTerms:
-        - jobs
-        - careers
-        - recruiting
-      entityFocus: company
-      extractionContract:
-        target: company
-        fields:
-          - company_name
-          - domain
-          - website_url
-          - service_offerings
-          - cta_type
-          - technology_signals
-        mode: llm
-        requiredFields:
-          - company_name
-          - domain
-        outputKey: website_candidates
-      outputs:
-        - website_signals
-        - technology_signals
-      next_steps:
-        - geographic_territory_prospecting
-      quality_rules:
-        - id: website_signal_validity
-          rule: "signal_has_evidence"
-          severity: "warning"
-          message: "Website signals should include positive evidence from page content or structure."
-      retry_policy:
-        max_attempts: 3
-        backoff_ms: 1500
-        backoff_multiplier: 2
-        max_backoff_ms: 20000
-        retry_on:
-          - timeout
-          - http_429
-
-    - id: geographic_territory_prospecting
-      name: "Geographic & Territory Prospecting"
-      description: >
-        Validate whether the company is active in the target region and whether the
-        service area or local geography matches the sales objective.
-      enabled: true
-      objective: "Confirm the target geography and local service footprint for each prospect."
-      dependsOn:
-        - website_technology_discovery
-      tools:
-        - maps_search_places
-      inputs:
-        - icp
-        - geography
-        - prospect_records
-      configuration:
-        radius_km: 50
-        include_local_presence: true
-      queryStrategy: "location-fit-check"
-      queryTemplates:
-        - '"${company_name}" "${city}" location'
-        - '"${industry}" near ${city}'
-      negativeTerms:
-        - remote-only
-        - global
-      entityFocus: company
-      extractionContract:
-        target: company
-        fields:
-          - company_name
-          - city
-          - state
-          - country
-          - service_area
-        mode: schema
-        requiredFields:
-          - company_name
-        outputKey: territory_candidates
-      outputs:
-        - territory_records
-      next_steps:
-        - lead_enrichment_qualification
-      quality_rules:
-        - id: geography_match
-          rule: "location_match_required_when_geo_filter_set"
-          severity: "warning"
-          message: "Geographic fit should be checked when a local or regional filter is supplied."
-      retry_policy:
-        max_attempts: 2
-        backoff_ms: 800
-        backoff_multiplier: 2
-        max_backoff_ms: 12000
-        retry_on:
-          - timeout
-
     - id: lead_enrichment_qualification
       name: "Lead Enrichment & Qualification"
       description: >
@@ -530,8 +411,8 @@ spec:
       enabled: true
       objective: "Normalize, enrich, deduplicate, score, and prioritize the final lead dataset."
       dependsOn:
-        - website_technology_discovery
-        - geographic_territory_prospecting
+        - search_engine_prospecting
+        - directory_mining
       tools:
         - enrich_company
         - enrich_person
@@ -539,9 +420,6 @@ spec:
       inputs:
         - prospect_records
         - directory_records
-        - website_signals
-        - technology_signals
-        - territory_records
       configuration:
         min_qualification_score: 50
         max_results: 100

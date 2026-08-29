@@ -59,8 +59,6 @@
       },
       { "stepId": "public_data_prospecting", "requiredTools": ["public_records_search"], "inputHints": ["companyName", "domain", "location"] },
       { "stepId": "marketplace_prospecting", "requiredTools": ["web_search"], "inputHints": ["keywords", "industry", "location"] },
-      { "stepId": "website_technology_discovery", "requiredTools": ["website_content_research", "detect_technologies"], "inputHints": ["domain", "url", "companyName"] },
-      { "stepId": "geographic_territory_prospecting", "requiredTools": ["maps_search_places"], "inputHints": ["companyName", "location", "country"] },
       { "stepId": "competitive_intelligence_prospecting", "requiredTools": ["web_news_search"], "inputHints": ["companyName", "domain", "industry"] },
       {
         "stepId": "event_community_prospecting",
