@@ -50,6 +50,7 @@ spec:
       - "Search for candidate companies and individuals across discovery channels"
       - "Mine structured directories and public records"
       - "Analyze website and technology signals"
+      - "Classify each candidate as a name-to-search lead or a URL-to-scrape lead"
       - "Identify buying signals and intent triggers"
       - "Enrich records with firmographic and contact data"
       - "Normalize and deduplicate the shared lead state"
@@ -72,6 +73,9 @@ spec:
           type: object
           description: "Canonical company record with firmographics, domain, and source evidence."
           required: true
+        about_company:
+          type: string
+          description: "Short summary of the company built from search, directory, website, and enrichment findings."
         person:
           type: object
           description: "Canonical person or contact record with contact details and decision-maker data."
@@ -110,6 +114,8 @@ spec:
               email:
                 type: string
               website_url:
+                type: string
+              about_company:
                 type: string
               source:
                 type: string
@@ -197,6 +203,8 @@ spec:
       - "If the country is ambiguous, prefer the most likely country from the supplied geography and note the uncertainty in the reasoning trace or intermediate output."
       - "When the query mentions a specific country, state or city, prioritize local or regional directories and people sources that match that geography."
       - "When the query is global or multi-region, run the discovery plan in a region-aware manner and keep the region/country annotation on each candidate lead."
+      - "For each search result, decide whether it is a name candidate or a URL candidate. Name candidates should be re-run through web_search to resolve a verified profile, email, or site; URL candidates should be routed to website_extraction, where list/search pages are screened for lead names and individual company/profile pages are scraped for contact details."
+      - "Only after search, directory, and website extraction have produced a deduplicated result set should the agent pass the final candidate set to enrichment; the resulting summary should be stored on the lead as about_company before final CRM writeback."
 
   tools:
     - id: web_search
@@ -407,7 +415,8 @@ spec:
       name: "Lead Enrichment & Qualification"
       description: >
         Enrich final leads with company and contact data, normalize the shared state,
-        and score them to determine final outreach priority.
+        and score them to determine final outreach priority only after search,
+        directory, and website extraction have produced a qualified candidate set.
       enabled: true
       objective: "Normalize, enrich, deduplicate, score, and prioritize the final lead dataset."
       dependsOn:
@@ -448,6 +457,7 @@ spec:
           - company_name
           - website_url
           - domain
+          - about_company
           - confidence
           - qualification_score
           - provenance
